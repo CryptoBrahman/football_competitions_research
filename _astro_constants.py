@@ -4,8 +4,6 @@ from flatlib import const
 from flatlib.chart import Chart
 from flatlib.datetime import Datetime
 from flatlib.geopos import GeoPos
-
-from flatlib.tools import arabicparts
 from flatlib.dignities import essential
 
 
@@ -22,13 +20,13 @@ class AstrologicalPoints:
     
     @staticmethod
     #  Main houses: 'ASC', 'DESC', 'MC', 'IC'
-    def calculate_astro_house(charts: pd.Series, name_of_house: str):
-        houses = charts.map(lambda x: x.get(getattr(const, name_of_house)))
-        return houses
+    def calculate_astro_objects(charts: pd.Series, name_of_object: str):
+        objects = charts.map(lambda x: x.get(getattr(const, name_of_object)))
+        return objects
     
     @staticmethod
-    def ruler_of_house(house: pd.Series):
-        rulers_name = house.map(lambda x: essential.ruler(getattr(x, 'sign')))
+    def ruler_of_object(col_object: pd.Series):
+        rulers_name = col_object.map(lambda x: essential.ruler(getattr(x, 'sign')))
         return rulers_name
     
     @staticmethod
