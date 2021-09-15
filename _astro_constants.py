@@ -19,7 +19,6 @@ class AstrologicalPoints:
         return charts
     
     @staticmethod
-    #  Main houses: 'ASC', 'DESC', 'MC', 'IC'
     def calculate_astro_objects(charts: pd.Series, name_of_object: str):
         objects = charts.map(lambda x: x.get(getattr(const, name_of_object)))
         return objects
