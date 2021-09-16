@@ -32,3 +32,11 @@ class AstrologicalPoints:
     def chart_object_attributes(df: pd.DataFrame, col_charts: str, col_obj_names: str):
         object_attributes = df.apply(lambda x: x[col_charts].get(x[col_obj_names]), axis=1)
         return object_attributes
+
+
+class AstrologicalRules:
+    
+    @staticmethod
+    def main_objects():
+        pass
+    
