@@ -1,6 +1,7 @@
 import pandas as pd
 
 from flatlib import const
+from flatlib.tools import arabicparts
 from flatlib.chart import Chart
 from flatlib.datetime import Datetime
 from flatlib.geopos import GeoPos
@@ -35,7 +36,10 @@ class AstrologicalPoints:
     
     @staticmethod
     def calculate_astro_objects(charts: pd.Series, name_of_object: str):
-        objects = charts.map(lambda x: x.get(getattr(const, name_of_object)))
+        if name_of_object == 'PARS_FORTUNA':
+            objects = charts.map(lambda x: arabicparts.getPart(getattr(arabicparts, name_of_object), x))
+        else:    
+            objects = charts.map(lambda x: x.get(getattr(const, name_of_object)))
         return objects
     
     @staticmethod
@@ -52,12 +56,18 @@ class AstrologicalPoints:
     def chart_object_attributes(df: pd.DataFrame, col_charts: str, col_obj_names: str):
         object_attributes = df.apply(lambda x: x[col_charts].get(x[col_obj_names]), axis=1)
         return object_attributes
-    
+
     @staticmethod
     def antes_objects(df: pd.DataFrame, col_for_antes: str):
         antes_objectcs = df[col_for_antes].map(lambda x: GenericObject.antiscia(x))
         return antes_objectcs
-     
+    
+    @staticmethod
+    def rename_antes_objects(df: pd.DataFrame, col_antes_for_rename: str):
+        for index, row in df[col_antes_for_rename].iteritems():
+            row.id = 'Antes ' + str(row.id)            
+        
+#    TODO
     @staticmethod
     def chart_unique_ids(df: pd.DataFrame, cols_for_id: list):
         
@@ -66,9 +76,4 @@ class AstrologicalPoints:
 #             unique_ids.append(unique_id)
         return unique_ids   
 
-class AstrologicalRules:
-    
-    @staticmethod
-    def main_objects():
-        pass
     
