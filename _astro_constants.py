@@ -67,13 +67,16 @@ class AstrologicalPoints:
         for index, row in df[col_antes_for_rename].iteritems():
             row.id = 'Antes ' + str(row.id)            
         
-#    TODO
     @staticmethod
-    def chart_unique_ids(df: pd.DataFrame, cols_for_id: list):
-        
-        unique_ids = df[cols_for_id].apply(lambda x: [i for i in x])
-#             unique_ids = set(unique_ids)
-#             unique_ids.append(unique_id)
-        return unique_ids   
+    def id_for_aspekts(df: pd.DataFrame, cols_for_id: list):
+        for index, row in df[cols_for_id].iterrows():
+            col_obj_ids = []
+            for col, obj_id in row.iteritems():
+                if obj_id is not None:
+                    col_obj_id = (col, obj_id.id)
+                col_obj_ids.append(col_obj_id)  
+
+                df.loc[index, 'id_for_aspects'] = [col_obj_ids]
+        return df.copy()  
 
     

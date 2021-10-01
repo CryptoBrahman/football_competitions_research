@@ -24,3 +24,6 @@ b) in file arabicparts.py changed 46 string:
 
 ) Copy libraries with changes in own directory.
 "Lat_lon", "flatlib".
+
+При расчетах аспектов учитывать фактор третьего объекта никак не обозначенного в 
+карте.
