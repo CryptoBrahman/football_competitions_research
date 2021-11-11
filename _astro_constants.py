@@ -20,7 +20,7 @@ class AstrologicalConstants:
     main_objects        = ['moon', 'ruler_asc', 'ruler_desc', 'pars_fortuna', 'ruler_pars_fortuna', 'ruler_mc', 'ruler_ic', 'sun', 
                            'saturn', 'uranus', 'neptune', 'pluto', 'chiron', 'north_node', 'south_node']
     
-    antes_objects       = ['pars_fortuna', 'uranus', 'neptune', 'pluto', 'chiron']
+    antes_objects       = ['moon', 'pars_fortuna', 'uranus', 'neptune', 'pluto', 'chiron']
 
 
 class AstrologicalPoints:
@@ -31,7 +31,7 @@ class AstrologicalPoints:
         dates = df.apply(lambda x: Datetime(x[date], x[utc_time], '+00:00'), axis=1)
         posits = df.apply(lambda x: GeoPos(x[lon], x[lat]), axis=1)
         df_dates_posits = pd.concat([dates, posits], axis=1, keys=['dates', 'posits'])
-        charts = df_dates_posits.apply(lambda x: Chart(x['dates'], x['posits']), axis=1)
+        charts = df_dates_posits.apply(lambda x: Chart(x['dates'], x['posits'],  hsys=const.HOUSES_PLACIDUS), axis=1)
         return charts
     
     @staticmethod
@@ -77,6 +77,53 @@ class AstrologicalPoints:
                 col_obj_ids.append(col_obj_id)  
 
                 df.loc[index, 'id_for_aspects'] = [col_obj_ids]
-        return df.copy()  
+        return df.copy() 
+    
+
+class TransformValues:   
+    
+    def __init__(self, tuples_list):
+        self._tuples_list = tuples_list
+        
+    def check_double_values(self):
+        all_values = []
+        for items in self._tuples_list:
+            all_values.append(items[1]) 
+            
+            self._double_values = []    
+            for val in all_values:
+                if all_values.count(val) > 1:
+                    self._double_values.append(val)
+                else:
+                    self._double_values.append(None)
+            self._double_values = list(set(self._double_values))
+        return self._double_values
+    
+    def check_double_items(self, tuples_list: list):
+        self.double_items = []
+        for item in tuples_list:
+            if item[1] in self.double_values:
+                self.double_items.append(item)
+        return self.double_items
+    
+    def concatinate_id_keys(self):
+        self.concat_tuples_list = []
+        for val in self.double_values:
+            concat_keys = []
+            for item in self.double_items:
+                if val == item[1]:
+                    concat_keys.append(item[0])
+            aprsand_keys = '_&_'.join([x for x in concat_keys])
+            all_aprsand_keys = (aprsand_keys, val)        
+
+            self.concat_tuples_list.append(all_aprsand_keys)
+        return self.concat_tuples_list
+    
+    def drop_double_tuple_values(self):
+        for item in self.concat_tuples_list:
+            if item[1] in self.double_values:
+                self.concat_tuples_list.remove(item)
+                drop_double_tuple_values(self.concat_tuples_list, self.double_values)
+        return self.concat_tuples_list
 
     

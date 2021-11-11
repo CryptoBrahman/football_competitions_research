@@ -13,6 +13,8 @@ b) in file arabicparts.py changed 46 string:
    #[const.MOON, const.SUN, const.ASC]   # Nocturnal
    [const.SUN, const.MOON, const.ASC]
    for only Diurnal calculate position PARS_FORTUNA
+c) Change orbs for planets in props.py.
+4) 
 
 При расчетах аспектов учитывать фактор третьего объекта никак не обозначенного в 
 карте.
