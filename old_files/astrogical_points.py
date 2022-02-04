@@ -1,16 +1,13 @@
 from typing import List
-from numpy import arange, isclose
-import swisseph as swe
+
 from flatlib import aspects
 from flatlib import const
 from flatlib.chart import Chart
 from flatlib.datetime import Datetime
 from flatlib.geopos import GeoPos
-from flatlib.tools import arabicparts
 from flatlib.protocols import behavior
-from flatlib.tools.chartdynamics import ChartDynamics
-from flatlib.ephem import ephem
-from flatlib.dignities import essential
+from flatlib.tools import arabicparts
+from numpy import arange, isclose
 
 date = Datetime('2015/03/13', '17:00', '+00:00')
 pos = GeoPos('38n32', '8w54')

@@ -2,7 +2,7 @@
 1) Install pacadges:
 a) sudo apt-get install python3.8-dev
 b) pip install jupyter jupyterlab pyswisseph bs4 flatlib latlon3 pandas
-   
+       no "swisseph" need instalation "pyswisseph" for flatlib module
 2) changed some methods in library Lat_Lon for python 3.8 or replace library with changes
 3) changed some methods in library flatlib:
 a) in file charts.py on 48 string need to replace:
