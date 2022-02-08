@@ -1,3 +1,6 @@
+import sys
+sys.path.append('/home/cryptobrahman/Own/football_competitions_research/own_modules/') 
+
 import pandas as pd
 
 from flatlib import const
@@ -21,6 +24,8 @@ class AstrologicalConstants:
                            'saturn', 'uranus', 'neptune', 'pluto', 'chiron', 'north_node', 'south_node']
     
     antes_objects       = ['moon', 'pars_fortuna', 'uranus', 'neptune', 'pluto', 'chiron']
+    
+    pars_objects        = ['PARS_SPIRIT', 'PARS_GLORY', 'PARS_CREST', 'PARS_ROCK']
 
 
 class AstrologicalPoints:
@@ -36,7 +41,7 @@ class AstrologicalPoints:
     
     @staticmethod
     def calculate_astro_objects(charts: pd.Series, name_of_object: str):
-        if name_of_object == 'PARS_FORTUNA':
+        if name_of_object.startswith('PARS'):
             objects = charts.map(lambda x: arabicparts.getPart(getattr(arabicparts, name_of_object), x))
         else:    
             objects = charts.map(lambda x: x.get(getattr(const, name_of_object)))
@@ -69,43 +74,40 @@ class AstrologicalPoints:
         
     @staticmethod
     def id_for_aspekts(df: pd.DataFrame, cols_for_id: list):
+        all_obj_ids = []
         for index, row in df[cols_for_id].iterrows():
             col_obj_ids = []
             for col, obj_id in row.iteritems():
-                if obj_id is not None:
-                    col_obj_id = (col, obj_id.id)
+                col_obj_id = (col, obj_id.id)
                 col_obj_ids.append(col_obj_id)  
-
-                df.loc[index, 'id_for_aspects'] = [col_obj_ids]
-        return df.copy() 
+            all_obj_ids.append(col_obj_ids)
+        return all_obj_ids
     
 
-class TransformValues:   
+class TransformDoubleValues:   
     
     def __init__(self, tuples_list):
-        self._tuples_list = tuples_list
+        self.tuples_list = tuples_list
         
     def check_double_values(self):
         all_values = []
-        for items in self._tuples_list:
+        for items in self.tuples_list:
             all_values.append(items[1]) 
-            
-            self._double_values = []    
+
+            self.double_values = []    
             for val in all_values:
                 if all_values.count(val) > 1:
-                    self._double_values.append(val)
-                else:
-                    self._double_values.append(None)
-            self._double_values = list(set(self._double_values))
-        return self._double_values
-    
-    def check_double_items(self, tuples_list: list):
+                    self.double_values.append(val)
+            self.double_values = list(set(self.double_values))
+        return self.double_values
+
+    def check_double_items(self):
         self.double_items = []
-        for item in tuples_list:
+        for item in self.tuples_list:
             if item[1] in self.double_values:
                 self.double_items.append(item)
         return self.double_items
-    
+
     def concatinate_id_keys(self):
         self.concat_tuples_list = []
         for val in self.double_values:
@@ -115,15 +117,25 @@ class TransformValues:
                     concat_keys.append(item[0])
             aprsand_keys = '_&_'.join([x for x in concat_keys])
             all_aprsand_keys = (aprsand_keys, val)        
-
             self.concat_tuples_list.append(all_aprsand_keys)
         return self.concat_tuples_list
-    
-    def drop_double_tuple_values(self):
-        for item in self.concat_tuples_list:
-            if item[1] in self.double_values:
-                self.concat_tuples_list.remove(item)
-                drop_double_tuple_values(self.concat_tuples_list, self.double_values)
-        return self.concat_tuples_list
 
+    def drop_double_tuple_values(self):
+        for item in self.tuples_list:
+            if item[1] in self.double_values:
+                self.tuples_list.remove(item)
+                self.drop_double_tuple_values()
+        return self.tuples_list
+
+    def concatinate_tuple_list_id_keys(self):
+        for item in self.concat_tuples_list:
+            self.tuples_list.append(item)   
+        return self.tuples_list
     
+    def conbine_class_methods(self):
+        self.check_double_values()
+        self.check_double_items()
+        self.concatinate_id_keys()
+        self.drop_double_tuple_values()
+        return self.concatinate_tuple_list_id_keys()
+     

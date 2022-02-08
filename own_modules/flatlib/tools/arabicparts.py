@@ -16,6 +16,10 @@ from flatlib.dignities import essential
 # Define arabic parts
 PARS_FORTUNA = const.PARS_FORTUNA
 PARS_SPIRIT = 'Pars Spirit'
+PARS_GLORY = 'Pars Glory'
+PARS_CREST = 'Pars Crest'
+PARS_ROCK = 'Pars Rock'
+
 PARS_FAITH = 'Pars Faith'
 PARS_SUBSTANCE = 'Pars Substance'
 PARS_WEDDING_MALE = 'Pars Wedding [Male]'
@@ -49,7 +53,23 @@ FORMULAS[PARS_FORTUNA] = [
 
 FORMULAS[PARS_SPIRIT] = [
     [const.MOON, const.SUN, const.ASC],
-    [const.SUN, const.MOON, const.ASC]
+    [const.MOON, const.SUN, const.ASC]
+    #[const.SUN, const.MOON, const.ASC]
+]
+
+FORMULAS[PARS_GLORY] = [
+    [const.SUN, const.JUPITER, const.ASC],
+    [const.JUPITER, const.SUN, const.ASC]
+]
+
+FORMULAS[PARS_CREST] = [
+    [const.SATURN, const.MARS, const.ASC],
+    [const.MARS, const.SATURN, const.ASC]
+]
+
+FORMULAS[PARS_ROCK] = [
+    [const.SUN, const.SATURN, const.ASC],
+    [const.SATURN, const.SUN, const.ASC]
 ]
 
 FORMULAS[PARS_FAITH] = [
