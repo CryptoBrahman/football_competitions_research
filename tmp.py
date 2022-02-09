@@ -8,3 +8,6 @@ from flatlib.chart import Chart
 moon_asc_aspect = aspects.getAspect(chart.get(const.MOON), chart.get(const.MARS), const.MAJOR_ASPECTS)
 objects = charts.map(lambda x: arabicparts.getPart(getattr(arabicparts, name_of_object), x))
 import swisseph as sw
+
+
+parsSpirit = arabicparts.getPart(arabicparts.PARS_GLORY, chart)
