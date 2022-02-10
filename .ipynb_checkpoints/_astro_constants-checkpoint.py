@@ -20,12 +20,16 @@ class AstrologicalConstants:
     
     necessary_constants = ['SUN', 'MOON', 'SATURN', 'URANUS', 'NEPTUNE', 'PLUTO', 'CHIRON', 'NORTH_NODE', 'SOUTH_NODE']
     
-    main_objects        = ['moon', 'ruler_asc', 'ruler_desc', 'pars_fortuna', 'ruler_pars_fortuna', 'ruler_mc', 'ruler_ic', 'sun', 
-                           'saturn', 'uranus', 'neptune', 'pluto', 'chiron', 'north_node', 'south_node']
+    main_objects        = ['moon', 'sun', 'saturn', 'uranus', 'neptune', 'pluto', 'chiron', 'north_node', 'south_node'] 
+                           
+    ruler_objects       = ['ruler_asc', 'ruler_desc', 'ruler_mc', 'ruler_ic', 'ruler_pars_fortuna', 'ruler_antes_pars_fortuna',
+                           'ruler_pars_spirit', 'ruler_pars_glory', 'ruler_pars_crest', 'ruler_pars_rock']
     
-    antes_objects       = ['moon', 'pars_fortuna', 'uranus', 'neptune', 'pluto', 'chiron']
+    pars_objects        = ['pars_fortuna', 'pars_spirit', 'pars_glory', 'pars_crest', 'pars_rock']
     
-    pars_objects        = ['PARS_SPIRIT', 'PARS_GLORY', 'PARS_CREST', 'PARS_ROCK']
+    for_antes_objects   = ['moon', 'ruler_asc', 'ruler_desc', 'ruler_mc', 'ruler_ic', 'pars_fortuna', 'uranus', 'neptune', 'pluto', 'chiron']
+    
+    pars_constants      = ['PARS_SPIRIT', 'PARS_GLORY', 'PARS_CREST', 'PARS_ROCK']
 
 
 class AstrologicalPoints:
