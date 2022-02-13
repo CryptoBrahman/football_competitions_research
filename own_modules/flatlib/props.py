@@ -216,7 +216,8 @@ class object:
         const.NORTH_NODE: 1,
         const.SOUTH_NODE: 1,
         const.SYZYGY: 0,
-        const.PARS_FORTUNA: 0
+        const.PARS_FORTUNA: 0,
+        'Antes Moon': 3
     }
     
     # Planet elements
