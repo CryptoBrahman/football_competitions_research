@@ -57,7 +57,7 @@ class GenericObject:
     
     def orb(self):
         """ Returns the orb of this object. """
-        return -1.0
+        return 0
     
     def isPlanet(self):
         """ Returns if this object is a planet. """

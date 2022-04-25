@@ -46,7 +46,7 @@ class Chart:
         # Handle optional arguments
         hsys = kwargs.get('hsys', const.HOUSES_DEFAULT)
         IDs = kwargs.get('IDs', const.LIST_OBJECTS)
-        #IDs = kwargs.get('IDs', const.LIST_OBJECTS_TRADITIONAL)
+        #IDs = kwargs.get('IDs', const.LIST_MAIN_OBJECTS)
         
         self.date = date
         self.pos = pos

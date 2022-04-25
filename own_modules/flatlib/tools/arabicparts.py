@@ -11,7 +11,8 @@
 from flatlib import const
 from flatlib.object import GenericObject
 from flatlib.dignities import essential
-
+from flatlib.props import object
+from flatlib.object import Object
 
 # Define arabic parts
 PARS_FORTUNA = const.PARS_FORTUNA
@@ -200,6 +201,7 @@ def getPart(ID, chart):
     obj = GenericObject()
     obj.id = ID
     obj.type = const.OBJ_ARABIC_PART
+    obj = Object.fromDict({'id': obj.id, 'type': obj.type})
     obj.relocate(partLon(ID, chart))
     return obj
     
