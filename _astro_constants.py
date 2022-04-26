@@ -40,64 +40,6 @@ class AstrologicalConstants:
     aspekts_degrees     = {'Con':0, 'Sixt':60, 'Sque':90, 'Trin':120, 'Opp':180}
 
 
-class GeneralMethods:
-    
-    @staticmethod
-    def degree_transform(point: float):
-        x = point // 1
-        y = point % 1 * 0.6
-        z = round(x + y, 2)
-        return z
-    
-    @staticmethod
-    def plus_minus_obj_lon_deg(obj_lon: float, deg: int, sinlge: str):
-        if sinlge != '+' and sinlge != '-':
-            print("Unsuported value in sinlge(-,+)")
-        
-        if sinlge == '+' and obj_lon + deg < 360:
-            obj_lon_deg_plus = obj_lon + deg
-        elif sinlge == '+':
-            obj_lon_deg_plus = abs(360 - obj_lon - deg)
-        else:
-            obj_lon_deg_plus = None
-        
-        if sinlge == '-' and obj_lon - deg < 0:
-            obj_lon_deg_minus = 360 - abs(obj_lon - deg)
-        elif sinlge == '-':
-            obj_lon_deg_minus = abs(obj_lon - deg)   
-        else:
-            obj_lon_deg_minus = None
-        
-        if obj_lon_deg_plus is not None:
-            return obj_lon_deg_plus
-        else:
-            return obj_lon_deg_minus
-            
-    @staticmethod
-    def equal_different_sing_feature(singles_degrees: list, include_lon: float, obj_lon: float, deg: int):
-        all_sings_feature = []
-        include_lon = round(include_lon, 2)
-        obj_lon = round(obj_lon, 2)
-        
-        obj_lon_deg_plus = GeneralMethods.plus_minus_obj_lon_deg(obj_lon, deg, '+')
-        obj_lon_deg_minus = GeneralMethods.plus_minus_obj_lon_deg(obj_lon, deg, '-')
-
-        for ind, x in  enumerate(singles_degrees):
-            if ind < len(singles_degrees)-1 and \
-            isclose(include_lon, arange(x, singles_degrees[ind+1], 0.01)).any() and \
-            (isclose(obj_lon_deg_plus, arange(x, singles_degrees[ind+1], 0.01)).any() or \
-             isclose(obj_lon_deg_minus, arange(x, singles_degrees[ind+1], 0.01)).any()):
-                all_sings_feature.append(1)
-            else:
-                all_sings_feature.append(0)
-            
-            if 1 in all_sings_feature:
-                sings_feature = 'equal'
-            else:
-                sings_feature = 'diff'
-            
-        return sings_feature 
-    
     
 class AstrologicalPoints:
     
@@ -211,7 +153,7 @@ class TransformDoubleValues:
         return self.concatinate_tuple_list_id_keys()
      
 
-class AspectsCalculate:
+class ObjectsPrepare:
     
     def __init__(self, sr: pd.Series):
         self.sr = sr
@@ -242,161 +184,313 @@ class AspectsCalculate:
         self.unique_objs =  all_objects  
         return  self.unique_objs
     
-
-    
-    
-    # def arrange_orbs_longitude(self):
-    #     self.orbs_arrange = []
-    #     for obj in self.unique_objs:
-    #         if obj.orb() != 0:
-    #             start_orb = float(f'{obj.lon - obj.orb():.2f}')
-    #             end_orb = float(f'{obj.lon + obj.orb():.2f}')
-    #             tuple_orbs = (obj.id, round(obj.lon, 2), start_orb, end_orb)
-    #             self.orbs_arrange.append(tuple_orbs)
-    #     return self.orbs_arrange
-    
-#     @staticmethod
-#     def house_type_orb_conuction(lon_house: float, lon_obj: float):
-#         if lon_house <= lon_obj and lon_house // 100 == lon_obj // 100:
-#             type_con = 'in'
-#             orb_con = lon_obj - lon_house
-#         elif lon_house >= lon_obj and lon_house // 100 == lon_obj // 100:
-#             type_con = 'out'
-#             orb_con = lon_house - lon_obj
-#         else:
-#             if lon_house > lon_obj:
-#                 type_con = 'in'
-#                 orb_con = abs(lon_house - lon_obj - 360)
-#             else:
-#                 type_con = 'out'
-#                 orb_con = abs(lon_house - lon_obj + 360)
-        
-#         type_con = type_con
-#         orb_con = GeneralMethods.degree_transform(orb_con)
-        
-#         return type_con, orb_con
-    
-#     def houses_conuctions(self):
-#         singles_degrees = [x for x in AstrologicalConstants.singles_degrees]
-        
-#         self.all_houses_conuctions = []
-#         for obj in self.unique_objs:
-#             for id_orbs in self.orbs_arrange:
-#                 if not obj.orb():
-#                     if id_orbs[3] > 360 and \
-#                     (isclose(round(obj.lon, 2), arange(id_orbs[2], 359.99, 0.01)).any() or isclose(round(obj.lon, 2), arange(0, id_orbs[3] - 360, 0.01)).any()):
-#                         type_con, orb_con = AspectsCalculate.house_type_orb_conuction(obj.lon, id_orbs[1])
-#                         sing = GeneralMethods.equal_different_sing_feature(singles_degrees, obj.lon, id_orbs[1])
-
-#                     elif id_orbs[2] < 0 and \
-#                     (isclose(round(obj.lon, 2), arange(360 + id_orbs[2], 359.99, 0.01)).any() or isclose(round(obj.lon, 2), arange(0, id_orbs[3], 0.01)).any()):
-#                         type_con, orb_con = AspectsCalculate.house_type_orb_conuction(obj.lon, id_orbs[1])
-#                         sing = GeneralMethods.equal_different_sing_feature(singles_degrees, obj.lon, id_orbs[1])
-
-#                     elif isclose(round(obj.lon, 2), arange(id_orbs[2], id_orbs[3], 0.01)).any():
-#                         type_con, orb_con = AspectsCalculate.house_type_orb_conuction(obj.lon, id_orbs[1])
-#                         sing = GeneralMethods.equal_different_sing_feature(singles_degrees, obj.lon, id_orbs[1])
-#                     else:
-#                         type_con, orb_con, sing = None, None, None
-                    
-#                     houses_conuctions = {'type': 'Con', 'pos': type_con, 'sing': sing, 'f_point': obj.id, 's_point': id_orbs[0], 'orb': orb_con}   
-                    
-#                     if houses_conuctions['pos'] != None:
-#                         self.all_houses_conuctions.append(houses_conuctions) 
-                
-#         return self.all_houses_conuctions
-    
-#     @staticmethod
-#     def object_data(objects: list, name_obj: str):
-#         for obj in objects:
-#             if obj.id == name_obj:
-#                 obj_id, obj_lon, obj_orb = obj.id, obj.lon, obj.orb()
-#                 return obj_id, obj_lon, obj_orb
-    
-    # @staticmethod
-    # def remove_moon_obj(objects: list):
-    #     objs_wt_moon = [x for x in objects if x.id != 'Moon']
-    #     return objs_wt_moon
-    
-    # @staticmethod
-    # def remove_houses_obj(objects: list):
-    #     objs_wt_houses = [x for x in objects if x.orb()]
-    #     return objs_wt_houses
-    
-#     def moon_aspekts(self):
-#         singles_degrees = [x for x in AstrologicalConstants.singles_degrees]
-#         self.all_moon_aspekts = []
-    
-#         moon_id, moon_lon, moon_orb = AspectsCalculate.object_data(self.unique_objs, 'Moon')
-#         objects = AspectsCalculate.remove_moon_obj(self.unique_objs)
-#         objects = AspectsCalculate.remove_houses_obj(self.unique_objs)
-
-#         for obj in self.unique_objs:
-#             for type_asp , deg in AstrologicalConstants.aspekts_degrees.items():
-#                 if moon_lon + moon_orb + deg > 360 and \
-#                 isclose(round(obj.lon, 2), arange(moon_lon + deg - 360, moon_lon + moon_orb + deg - 360, 0.01)).any():
-#                     asp = type_asp
-#                     type_con = 'conv'
-#                     orb_con = moon_lon + moon_orb + deg - 360 - obj.lon
-#                     orb_con = GeneralMethods.degree_transform(orb_con)
-#                     sing = GeneralMethods.equal_different_sing_feature(singles_degrees, moon_lon + deg, obj.lon)
-
-#                 elif isclose(round(obj.lon, 2), arange(moon_lon + deg, moon_lon + moon_orb + deg, 0.01)).any():
-#                     asp = type_asp
-#                     type_con = 'conv'
-#                     orb_con = moon_lon + moon_orb + deg - obj.lon
-#                     orb_con = GeneralMethods.degree_transform(orb_con)
-#                     sing = GeneralMethods.equal_different_sing_feature(singles_degrees, moon_lon + deg, obj.lon)
-
-#                 elif moon_lon + deg > 360 and \
-#                 isclose(round(obj.lon, 2), arange(moon_lon + deg - 1 - 360, moon_lon + deg - 360, 0.01)).any():
-#                     asp = type_asp
-#                     type_con = 'diver'
-#                     orb_con = moon_lon + deg - 360 - obj.lon
-#                     orb_con = - GeneralMethods.degree_transform(orb_con)
-#                     sing = GeneralMethods.equal_different_sing_feature(singles_degrees, moon_lon + deg, obj.lon)
-
-#                 elif isclose(round(obj.lon, 2), arange(moon_lon + deg - 1, moon_lon + deg, 0.01)).any():
-#                     asp = type_asp
-#                     type_con = 'diver'
-#                     orb_con = moon_lon + deg - obj.lon
-#                     orb_con = - GeneralMethods.degree_transform(orb_con)
-#                     sing = GeneralMethods.equal_different_sing_feature(singles_degrees, moon_lon + deg, obj.lon)    
-
-#                 else:
-#                     asp, type_con, orb_con, sing = None, None, None, None
-
-#                 moon_aspects = {'type': asp, 'pos': type_con, 'sing': sing, 'f_point': 'Moon', 's_point': obj.id, 'orb': orb_con}
-
-#                 if moon_aspects['type'] != None:
-#                     self.all_moon_aspekts.append(moon_aspects)
-
-#         return self.all_moon_aspekts 
-    
-    # @staticmethod
-    # def remove_name_from_typle(tuple_list: list, name: str):
-    #     name_list = [x[0] for x in tuple_list]
-    #     if name in name_list:
-    #         name_index = name_list.index(name)
-    #         tuple_list.pop(name_index) 
-    #         return tuple_list
-
-    
-    
-    
-    # def join_aspects(self):
-    #     self.all_aspects = self.all_houses_conuctions.copy()
-    #     self.all_aspects.append(self.all_moon_aspekts)
-    #     return self.all_aspects
-            
-    
     def conbine_class_methods(self):
         self.cols()
         self.list_ids()
         self.unique_objects()
         return self.zeroing_some_longspeed()
-        # self.houses_conuctions()
-        # return self.moon_aspekts()
-        # return self.join_aspects()
 
-        # self.arrange_orbs_longitude()
+    
+class AspectsPrepare:
+    
+    @staticmethod
+    def degree_transform(point: float):
+        x = point // 1
+        y = point % 1 * 0.6
+        z = round(x + y, 2)
+        return z
+    
+    @staticmethod
+    def plus_minus_obj_lon_deg(obj_lon: float, deg: int, sinlge: str):
+        if sinlge != '+' and sinlge != '-':
+            print("Unsuported value in sinlge(-,+)")
+        
+        if sinlge == '+' and obj_lon + deg < 360:
+            obj_lon_deg_plus = obj_lon + deg
+        elif sinlge == '+':
+            obj_lon_deg_plus = abs(360 - obj_lon - deg)
+        else:
+            obj_lon_deg_plus = None
+        
+        if sinlge == '-' and obj_lon - deg < 0:
+            obj_lon_deg_minus = 360 - abs(obj_lon - deg)
+        elif sinlge == '-':
+            obj_lon_deg_minus = abs(obj_lon - deg)   
+        else:
+            obj_lon_deg_minus = None
+        
+        if obj_lon_deg_plus is not None:
+            return obj_lon_deg_plus
+        else:
+            return obj_lon_deg_minus
+            
+    @staticmethod
+    def equal_different_sing_feature(singles_degrees: list, include_lon: float, obj_lon: float, deg: int):
+        all_sings_feature = []
+        include_lon = round(include_lon, 2)
+        obj_lon = round(obj_lon, 2)
+        
+        obj_lon_deg_plus = AspectsPrepare.plus_minus_obj_lon_deg(obj_lon, deg, '+')
+        obj_lon_deg_minus = AspectsPrepare.plus_minus_obj_lon_deg(obj_lon, deg, '-')
+
+        for ind, x in  enumerate(singles_degrees):
+            if ind < len(singles_degrees)-1 and \
+            isclose(include_lon, arange(x, singles_degrees[ind+1], 0.01)).any() and \
+            (isclose(obj_lon_deg_plus, arange(x, singles_degrees[ind+1], 0.01)).any() or \
+             isclose(obj_lon_deg_minus, arange(x, singles_degrees[ind+1], 0.01)).any()):
+                all_sings_feature.append(1)
+            else:
+                all_sings_feature.append(0)
+            
+            if 1 in all_sings_feature:
+                sings_feature = 'equal'
+            else:
+                sings_feature = 'diff'
+            
+        return sings_feature 
+    
+    @staticmethod
+    def remove_objects(objects: list, remove_objs: list):
+        list_wt_objs = [x for x in objects if x.id not in remove_objs]
+        return list_wt_objs
+    
+    @staticmethod
+    def orb_calculate(include_lon: float, obj_lon: float, deg: int):
+        obj_lon_deg_plus = AspectsPrepare.plus_minus_obj_lon_deg(obj_lon, deg, '+')
+        obj_lon_deg_minus = AspectsPrepare.plus_minus_obj_lon_deg(obj_lon, deg, '-')
+
+        orb_plus = abs(include_lon - obj_lon_deg_plus)
+        orb_minus = abs(include_lon - obj_lon_deg_minus)
+
+        if obj_lon_deg_plus == obj_lon_deg_minus:
+            orb_plus = 360 - orb_plus
+        if orb_plus < orb_minus:
+            return round(orb_plus, 2)
+        else:
+            return round(orb_minus, 2)
+        
+    @staticmethod
+    def pos_neg_obj_lon_deg(obj_lon: float, deg: int):
+        pos_obj_lon_deg = obj_lon + deg
+        neg_obj_lon_deg = obj_lon - deg
+
+        if pos_obj_lon_deg >= 360:
+            pos_obj_lon_deg = abs(360 - pos_obj_lon_deg)
+        if neg_obj_lon_deg < 0:
+            neg_obj_lon_deg = abs(360 + neg_obj_lon_deg)  
+
+        return pos_obj_lon_deg, neg_obj_lon_deg
+    
+    @staticmethod
+    def transform_list_type(list_blocks: list):
+        all_list_blocks = []
+        for block in list_blocks:
+            if type(block[0]) is list:
+                all_list_blocks.append(block[0]) 
+                all_list_blocks.append(block[1]) 
+            else:
+                all_list_blocks.append(block)
+        return all_list_blocks 
+    
+    @staticmethod
+    def remove_list_dubles(list_blocks: list):
+        for ind, block in enumerate(list_blocks):
+            if list_blocks.count(block) > 1:
+                list_blocks.pop(ind)
+                AspectsPrepare.remove_list_dubles(list_blocks)
+                
+    @staticmethod
+    # for check all blocks transformation (obj_lon: 245, 235, 115, 125, obj_orb: 10, deg: 120)
+    def pos_neg_points_orb(obj_lon: float, obj_orb: int, deg: int, before_point_asp = 'no'):
+        pos_obj_lon_deg, neg_obj_lon_deg = AspectsPrepare.pos_neg_obj_lon_deg(obj_lon, deg)
+
+        bef_pos_point_orb = pos_obj_lon_deg - obj_orb
+        bef_neg_point_orb = neg_obj_lon_deg - obj_orb
+        aft_pos_point_orb = pos_obj_lon_deg + obj_orb
+        aft_neg_point_orb = neg_obj_lon_deg + obj_orb
+
+        block_1 = [bef_pos_point_orb, pos_obj_lon_deg] 
+        block_2 = [pos_obj_lon_deg,   aft_pos_point_orb] 
+        block_3 = [bef_neg_point_orb, neg_obj_lon_deg]
+        block_4 = [neg_obj_lon_deg,   aft_neg_point_orb]
+
+        if bef_pos_point_orb < 0:
+            block_1 = [[360 + bef_pos_point_orb, 359.99], [0, pos_obj_lon_deg]] 
+        if aft_pos_point_orb >= 360:
+            block_2 = [[pos_obj_lon_deg, 359.99], [0, aft_pos_point_orb - 360]]     
+        if bef_neg_point_orb < 0:    
+            block_3 = [[360 + bef_neg_point_orb, 359.99], [0, neg_obj_lon_deg]]
+        if aft_neg_point_orb >= 360:
+            block_4 = [[neg_obj_lon_deg, 359.99], [0, aft_neg_point_orb - 360]]  
+
+        if before_point_asp == 'no': 
+            obj_lon_degs = [block_2, block_4]
+        elif before_point_asp == 'yes':
+            obj_lon_degs = [block_1, block_3]
+        else:
+            return 'Unsuported value in before_point_asp'
+
+        obj_lon_degs = AspectsPrepare.transform_list_type(obj_lon_degs)
+        AspectsPrepare.remove_list_dubles(obj_lon_degs)
+
+        return obj_lon_degs   
+    
+    @staticmethod
+    def switching_ranges_with_orb(include_lon: float, obj_lon: float, obj_orb: int, deg: int, before_point_asp = 'no'):
+        obj_lon_degs = AspectsPrepare.pos_neg_points_orb(obj_lon, obj_orb, deg, before_point_asp)
+
+        for lon_degs in obj_lon_degs:
+            if isclose(round(include_lon, 2), arange(lon_degs[0], lon_degs[1], 0.01)).any():
+                orb_con = AspectsPrepare.orb_calculate(include_lon, obj_lon, deg)
+                return orb_con 
+
+    @staticmethod         
+    def object_data(objects: list, name: str):
+        for obj in objects:
+            if obj.id == name:
+                if 'meanMotion' not in dir(obj):
+                    obj_house = 1
+                    obj_lonsp = 0
+                else:
+                    obj_house = 0
+                    obj_lonsp = obj.lonspeed
+
+                obj_id, obj_lon, obj_orb = obj.id, obj.lon, obj.orb()
+                return obj_id, obj_lon, obj_orb, obj_lonsp, obj_house
+            
+    @staticmethod
+    def house_type_approuch(incl_lon: float, incl_lonsp: float, obj_lon: float):
+        if obj_lon <= incl_lon and round(obj_lon/100) == round(incl_lon/100):
+            pos = 'in'
+        elif obj_lon >= incl_lon and round(obj_lon/100) == round(incl_lon/100):
+            pos = 'out'
+        else:
+            if  obj_lon >= incl_lon:
+                pos = 'in'
+            else:
+                pos = 'out'
+
+        if incl_lonsp == 0:
+            type_appr = pos + '_stat'
+        elif (pos == 'in' and incl_lonsp < 0) or (pos == 'out' and incl_lonsp > 0):
+            type_appr = pos + '_conv'
+        else:
+            type_appr = pos + '_diver'
+
+        return type_appr
+    
+    @staticmethod
+    def left_right_semi_circle(incl_lon: float, obj_lon: float, deg: int):
+        obj_lon_deg = obj_lon + deg
+
+        if obj_lon_deg > 360:
+            obj_lon_deg = abs(360 - obj_lon_deg)
+
+        if obj_lon_deg <= 180 and isclose(round(incl_lon, 2), arange(obj_lon_deg, obj_lon_deg + 180, 0.01)).any():
+            incl_lon_pos = 'right'
+        elif obj_lon_deg > 180 and (isclose(round(incl_lon, 2), arange(obj_lon_deg, 359.99, 0.01)).any() or \
+        isclose(round(incl_lon, 2), arange(0, 360 - obj_lon_deg, 0.01)).any()):
+            incl_lon_pos = 'right'
+        else:
+            incl_lon_pos = 'left'
+        return incl_lon_pos 
+    
+    @staticmethod
+    def type_approach(incl_lon: float, incl_lonsp: float, obj_lon: float, obj_lonsp: float, obj_house: int, deg: int):    
+        incl_lon_pos = AspectsPrepare.left_right_semi_circle(incl_lon, obj_lon, deg)
+
+        if obj_house == 1:
+            type_appr = AspectsPrepare.house_type_approuch(incl_lon, incl_lonsp, obj_lon)
+        else:
+            if incl_lon_pos == 'left':
+                l1_lonsp = incl_lonsp
+                l2_lonsp = obj_lonsp 
+            else:
+                l1_lonsp = obj_lonsp 
+                l2_lonsp = incl_lonsp 
+
+            if incl_lonsp == obj_lonsp:
+                type_appr = 'stat'
+
+            elif (l1_lonsp == 0 and l2_lonsp > 0)  or \
+                 (l1_lonsp < 0  and l2_lonsp == 0) or \
+                 (l1_lonsp < 0  and l2_lonsp > 0)  or \
+                 (l2_lonsp > l1_lonsp > 0) or \
+                 (l1_lonsp < l2_lonsp < 0): # -0.2 speedly than -0.1
+                 type_appr = 'diver'
+            elif (l1_lonsp == 0 and l2_lonsp < 0)  or \
+                 (l1_lonsp > 0  and l2_lonsp == 0) or \
+                 (l1_lonsp > 0  and l2_lonsp < 0)  or \
+                 (l1_lonsp > l2_lonsp > 0) or \
+                 (l2_lonsp < l1_lonsp < 0):
+                 type_appr = 'conv'
+            else:
+                 type_appr = 'no'
+
+        return type_appr   
+    
+    @staticmethod
+    def type_orb_calculate(obj_orb: int, before_point_asp = 'no', after_orb ='const', before_orb ='const'):
+        if (after_orb !='const' and type(after_orb) is not int) or (before_orb !='const' and type(before_orb) is not int):
+            return 'Unsuported value in conv_orb or diver_orb'
+
+        if before_point_asp == 'no' and after_orb != 'const' and before_orb == 'const':
+            orb = after_orb
+        elif before_point_asp == 'yes' and after_orb == 'const' and before_orb != 'const':
+            orb = before_orb 
+        else:
+            orb = obj_orb
+        return orb
+    
+    @staticmethod
+    def object_aspects(id_obj: str, unique_objs: list, remove_objs: list, aspekts_degrees: dict, before_point_asp = 'no', after_orb ='const', before_orb ='const'):
+        singles_degrees = AstrologicalConstants.singles_degrees
+        all_aspekts = []
+        objects_cp = unique_objs.copy()
+
+        obj_id, obj_lon, obj_orb, obj_lonsp, obj_house = AspectsPrepare.object_data(objects_cp, id_obj)
+        obj_orb = AspectsPrepare.type_orb_calculate(obj_orb, before_point_asp, after_orb, before_orb)    
+        objects_cp = AspectsPrepare.remove_objects(objects_cp, [id_obj] + remove_objs)
+
+        for incl_obj in objects_cp:
+            for type_asp, deg in aspekts_degrees.items():
+
+                orb_con = AspectsPrepare.switching_ranges_with_orb(incl_obj.lon, obj_lon, obj_orb, deg, before_point_asp)
+                if orb_con:
+                    asp = type_asp
+                    type_appr = AspectsPrepare.type_approach(incl_obj.lon, incl_obj.lonspeed, obj_lon, obj_lonsp, obj_house, deg)
+                    orb_con = AspectsPrepare.degree_transform(orb_con)
+                    sing = AspectsPrepare.equal_different_sing_feature(singles_degrees, incl_obj.lon, obj_lon, deg)
+                else:
+                    asp, type_appr, orb_con, sing = None, None, None, None
+
+                point_aspects = {'f_point': id_obj, 's_point': incl_obj.id, 'type': asp, 'approach': type_appr, 'sing': sing, 'orb': orb_con}
+
+                if point_aspects['type'] != None:
+                    all_aspekts.append(point_aspects)
+
+        return all_aspekts
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
