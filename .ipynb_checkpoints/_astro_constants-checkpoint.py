@@ -373,21 +373,21 @@ class AspectsCalculate:
 
 #         return self.all_moon_aspekts 
     
-    @staticmethod
-    def remove_name_from_typle(tuple_list: list, name: str):
-        name_list = [x[0] for x in tuple_list]
-        if name in name_list:
-            name_index = name_list.index(name)
-            tuple_list.pop(name_index) 
-            return tuple_list
+    # @staticmethod
+    # def remove_name_from_typle(tuple_list: list, name: str):
+    #     name_list = [x[0] for x in tuple_list]
+    #     if name in name_list:
+    #         name_index = name_list.index(name)
+    #         tuple_list.pop(name_index) 
+    #         return tuple_list
 
     
     
     
-    def join_aspects(self):
-        self.all_aspects = self.all_houses_conuctions.copy()
-        self.all_aspects.append(self.all_moon_aspekts)
-        return self.all_aspects
+    # def join_aspects(self):
+    #     self.all_aspects = self.all_houses_conuctions.copy()
+    #     self.all_aspects.append(self.all_moon_aspekts)
+    #     return self.all_aspects
             
     
     def conbine_class_methods(self):
