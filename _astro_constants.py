@@ -251,8 +251,10 @@ class AspectsPrepare:
     
     @staticmethod
     def remove_objects(objects: list, remove_objs: list):
-        list_wt_objs = [x for x in objects if x.id not in remove_objs]
-        return list_wt_objs
+        for r_obj in remove_objs:
+            for obj in objects:
+                if obj.id == r_obj:
+                    objects.remove(obj) 
     
     @staticmethod
     def orb_calculate(include_lon: float, obj_lon: float, deg: int):
@@ -282,7 +284,7 @@ class AspectsPrepare:
         return pos_obj_lon_deg, neg_obj_lon_deg
     
     @staticmethod
-    def transform_list_type(list_blocks: list):
+    def transform_blocks_list_type(list_blocks: list):
         all_list_blocks = []
         for block in list_blocks:
             if type(block[0]) is list:
@@ -330,7 +332,7 @@ class AspectsPrepare:
         else:
             return 'Unsuported value in before_point_asp'
 
-        obj_lon_degs = AspectsPrepare.transform_list_type(obj_lon_degs)
+        obj_lon_degs = AspectsPrepare.transform_blocks_list_type(obj_lon_degs)
         AspectsPrepare.remove_list_dubles(obj_lon_degs)
 
         return obj_lon_degs   
@@ -446,32 +448,90 @@ class AspectsPrepare:
     def object_aspects(id_obj: str, unique_objs: list, remove_objs: list, aspekts_degrees: dict, before_point_asp = 'no', after_orb ='const', before_orb ='const'):
         singles_degrees = AstrologicalConstants.singles_degrees
         all_aspekts = []
-        objects_cp = unique_objs.copy()
+        
+        AspectsPrepare.remove_objects(unique_objs, remove_objs)
+        objects = unique_objs.copy()
+        list_ids = [x.id for x in unique_objs]
+        
+        if id_obj in list_ids:
+        
+            obj_id, obj_lon, obj_orb, obj_lonsp, obj_house = AspectsPrepare.object_data(objects, id_obj)
+            obj_orb = AspectsPrepare.type_orb_calculate(obj_orb, before_point_asp, after_orb, before_orb)
+            AspectsPrepare.remove_objects(objects, [obj_id])
+            
+            for incl_obj in objects:
+                for type_asp, deg in aspekts_degrees.items():
 
-        obj_id, obj_lon, obj_orb, obj_lonsp, obj_house = AspectsPrepare.object_data(objects_cp, id_obj)
-        obj_orb = AspectsPrepare.type_orb_calculate(obj_orb, before_point_asp, after_orb, before_orb)    
-        objects_cp = AspectsPrepare.remove_objects(objects_cp, [id_obj] + remove_objs)
+                    orb_con = AspectsPrepare.switching_ranges_with_orb(incl_obj.lon, obj_lon, obj_orb, deg, before_point_asp)
+                    if orb_con:
+                        asp = type_asp
+                        type_appr = AspectsPrepare.type_approach(incl_obj.lon, incl_obj.lonspeed, obj_lon, obj_lonsp, obj_house, deg)
+                        orb_con = AspectsPrepare.degree_transform(orb_con)
+                        sing = AspectsPrepare.equal_different_sing_feature(singles_degrees, incl_obj.lon, obj_lon, deg)
+                    else:
+                        asp, type_appr, orb_con, sing = None, None, None, None
+                    
+                    point_aspects = {'f_point': id_obj, 's_point': incl_obj.id, 'type': asp, 'approach': type_appr, 'sing': sing, 'orb': orb_con}
 
-        for incl_obj in objects_cp:
-            for type_asp, deg in aspekts_degrees.items():
+                    if point_aspects['type'] != None:
+                        all_aspekts.append(point_aspects)
+                        
+            return all_aspekts
 
-                orb_con = AspectsPrepare.switching_ranges_with_orb(incl_obj.lon, obj_lon, obj_orb, deg, before_point_asp)
-                if orb_con:
-                    asp = type_asp
-                    type_appr = AspectsPrepare.type_approach(incl_obj.lon, incl_obj.lonspeed, obj_lon, obj_lonsp, obj_house, deg)
-                    orb_con = AspectsPrepare.degree_transform(orb_con)
-                    sing = AspectsPrepare.equal_different_sing_feature(singles_degrees, incl_obj.lon, obj_lon, deg)
-                else:
-                    asp, type_appr, orb_con, sing = None, None, None, None
+    @staticmethod
+    def transform_dict_list_type(list_dicts: list):
+        all_dict = []
+        for var in list_dicts:
+            if var != [] and var != None:
+                while len(var) != 0:
+                    x = var.pop()
+                    all_dict.append(x)    
+        return all_dict
 
-                point_aspects = {'f_point': id_obj, 's_point': incl_obj.id, 'type': asp, 'approach': type_appr, 'sing': sing, 'orb': orb_con}
-
-                if point_aspects['type'] != None:
-                    all_aspekts.append(point_aspects)
-
-        return all_aspekts
 
     
+class AspectsClearing:
+    
+    @staticmethod
+    def remove_duplicate_aspects(list_dicts: list):
+        list_dicts_cp = list_dicts.copy()
+
+        for val in list_dicts:
+            for val_cp in list_dicts_cp:
+                if val['f_point'] == val_cp['s_point'] and val_cp['f_point'] == val['s_point']:
+                    list_dicts.remove(val_cp)
+                    
+    @staticmethod
+    def remove_antes_repeat_aspects(list_dicts: list):
+        list_dicts_cp = list_dicts.copy()
+        active_planets = AstrologicalConstants.active_planets
+
+        for val in list_dicts:
+            for val_cp in list_dicts_cp:
+                if ('Antes '+ val['f_point']) == val_cp['s_point'] and val['s_point'] == ('Antes '+ val_cp['f_point']):
+                    if val['f_point'] not in active_planets:
+                        list_dicts.remove(val)
+                        
+    @staticmethod
+    def remove_duble_antes_aspects(list_dicts: list):
+        list_dicts_cp = list_dicts.copy()
+
+        for val in list_dicts:
+            for val_cp in list_dicts_cp:
+                if ('Antes '+ val['f_point']) == val_cp['s_point'] and ('Antes '+ val['s_point']) == val_cp['f_point']:
+                        list_dicts.remove(val_cp) 
+                        
+    @staticmethod
+    def remove_node_opposition(list_dicts: list):
+        list_dicts_cp = list_dicts.copy()
+        node_list = ['North Node', 'South Node']
+
+        for val in list_dicts:
+            for val_cp in list_dicts_cp:
+                if (val['f_point'] in node_list or val['s_point'] in node_list) and \
+                (val_cp['f_point'] in node_list or val_cp['s_point'] in node_list):
+                    if val['f_point'] == val_cp['f_point'] and val['s_point'] == val_cp['s_point'] and val['type'] == 'Opp':
+                        list_dicts.remove(val_cp)
     
     
     
