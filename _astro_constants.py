@@ -4,6 +4,7 @@ sys.path.append('/home/cryptobrahman/Own/football_competitions_research/own_modu
 import pandas as pd
 from itertools import combinations
 from numpy import arange, isclose
+from copy import deepcopy
 
 from flatlib import const
 from flatlib.tools import arabicparts
@@ -39,6 +40,7 @@ class AstrologicalConstants:
     
     aspekts_degrees     = {'Con':0, 'Sixt':60, 'Sque':90, 'Trin':120, 'Opp':180}
 
+    compl_denide_points = ['Pars Fortuna', 'Antes Pars Fortuna', 'Pars Spirit', 'Pars Glory', 'Pars Crest', 'Pars Rock', 'North Node', 'South Node']
 
     
 class AstrologicalPoints:
@@ -480,12 +482,15 @@ class AspectsPrepare:
 
     @staticmethod
     def transform_dict_list_type(list_dicts: list):
+        list_dicts_cp = deepcopy(list_dicts)
         all_dict = []
-        for var in list_dicts:
+        
+        for var in list_dicts_cp:
             if var != [] and var != None:
                 while len(var) != 0:
                     x = var.pop()
                     all_dict.append(x)    
+        
         return all_dict
 
 
