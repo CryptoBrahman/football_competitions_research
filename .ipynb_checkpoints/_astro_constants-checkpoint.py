@@ -40,7 +40,7 @@ class AstrologicalConstants:
     
     aspekts_degrees     = {'Con':0, 'Sixt':60, 'Sque':90, 'Trin':120, 'Opp':180}
 
-    compl_denide_points = ['Pars Fortuna', 'Antes Pars Fortuna', 'Pars Spirit', 'Pars Glory', 'Pars Crest', 'Pars Rock', 'North Node', 'South Node']
+    parts               = ['Pars Fortuna', 'Antes Pars Fortuna', 'Pars Spirit', 'Pars Glory', 'Pars Crest', 'Pars Rock']
 
     
 class AstrologicalPoints:
@@ -78,7 +78,7 @@ class AstrologicalPoints:
         return object_attributes
 
     @staticmethod
-    def antes_objects(df: pd.DataFrame, col_for_antes: str):
+    def antes_objects_calc(df: pd.DataFrame, col_for_antes: str):
         antes_objectcs = df[col_for_antes].map(lambda x: GenericObject.antiscia(x))
         return antes_objectcs
     
@@ -253,10 +253,14 @@ class AspectsPrepare:
     
     @staticmethod
     def remove_objects(objects: list, remove_objs: list):
+        objects_cp = objects.copy()
+        
         for r_obj in remove_objs:
             for obj in objects:
                 if obj.id == r_obj:
-                    objects.remove(obj) 
+                    objects_cp.remove(obj) 
+                    
+        return  objects_cp           
     
     @staticmethod
     def orb_calculate(include_lon: float, obj_lon: float, deg: int):
@@ -336,17 +340,18 @@ class AspectsPrepare:
 
         obj_lon_degs = AspectsPrepare.transform_blocks_list_type(obj_lon_degs)
         AspectsPrepare.remove_list_dubles(obj_lon_degs)
-
+        
         return obj_lon_degs   
     
     @staticmethod
     def switching_ranges_with_orb(include_lon: float, obj_lon: float, obj_orb: int, deg: int, before_point_asp = 'no'):
         obj_lon_degs = AspectsPrepare.pos_neg_points_orb(obj_lon, obj_orb, deg, before_point_asp)
-
+        
         for lon_degs in obj_lon_degs:
-            if isclose(round(include_lon, 2), arange(lon_degs[0], lon_degs[1], 0.01)).any():
+            if isclose(round(include_lon, 2), arange(round(lon_degs[0], 2), round(lon_degs[1], 2), 0.01)).any():
                 orb_con = AspectsPrepare.orb_calculate(include_lon, obj_lon, deg)
-                return orb_con 
+                return orb_con
+                
 
     @staticmethod         
     def object_data(objects: list, name: str):
@@ -361,7 +366,7 @@ class AspectsPrepare:
 
                 obj_id, obj_lon, obj_orb = obj.id, obj.lon, obj.orb()
                 return obj_id, obj_lon, obj_orb, obj_lonsp, obj_house
-            
+    
     @staticmethod
     def house_type_approuch(incl_lon: float, incl_lonsp: float, obj_lon: float):
         if obj_lon <= incl_lon and round(obj_lon/100) == round(incl_lon/100):
@@ -383,26 +388,29 @@ class AspectsPrepare:
 
         return type_appr
     
+    
     @staticmethod
-    def left_right_semi_circle(incl_lon: float, obj_lon: float, deg: int):
-        obj_lon_deg = obj_lon + deg
-
-        if obj_lon_deg > 360:
-            obj_lon_deg = abs(360 - obj_lon_deg)
-
-        if obj_lon_deg <= 180 and isclose(round(incl_lon, 2), arange(obj_lon_deg, obj_lon_deg + 180, 0.01)).any():
-            incl_lon_pos = 'right'
-        elif obj_lon_deg > 180 and (isclose(round(incl_lon, 2), arange(obj_lon_deg, 359.99, 0.01)).any() or \
-        isclose(round(incl_lon, 2), arange(0, 360 - obj_lon_deg, 0.01)).any()):
-            incl_lon_pos = 'right'
-        else:
-            incl_lon_pos = 'left'
+    def left_right_semi_circle(incl_lon: float, obj_lon: float, obj_orb: int, deg: int, before_point_asp='no'):
+        obj_lon_degs = AspectsPrepare.pos_neg_points_orb(obj_lon, obj_orb, deg, before_point_asp)
+        all_incl_lon = []
+        
+        for obj_ld in obj_lon_degs:
+            if isclose(round(incl_lon, 2), arange(round(obj_ld[0], 2), round(obj_ld[1], 2), 0.01)).any() and before_point_asp == 'no':
+                all_incl_lon.append(1)
+            else:
+                all_incl_lon.append(0)
+            
+            if 1 in all_incl_lon:
+                incl_lon_pos = 'right'
+            else:
+                incl_lon_pos = 'left'
+            
         return incl_lon_pos 
     
     @staticmethod
-    def type_approach(incl_lon: float, incl_lonsp: float, obj_lon: float, obj_lonsp: float, obj_house: int, deg: int):    
-        incl_lon_pos = AspectsPrepare.left_right_semi_circle(incl_lon, obj_lon, deg)
-
+    def type_approach(incl_lon: float, incl_lonsp: float, obj_lon: float, obj_lonsp: float, obj_orb: int, obj_house: int, deg: int, before_point_asp='no'):    
+        incl_lon_pos = AspectsPrepare.left_right_semi_circle(incl_lon, obj_lon, obj_orb, deg, before_point_asp) 
+        
         if obj_house == 1:
             type_appr = AspectsPrepare.house_type_approuch(incl_lon, incl_lonsp, obj_lon)
         else:
@@ -451,29 +459,29 @@ class AspectsPrepare:
         singles_degrees = AstrologicalConstants.singles_degrees
         all_aspekts = []
         
-        AspectsPrepare.remove_objects(unique_objs, remove_objs)
+        unique_objs = AspectsPrepare.remove_objects(unique_objs, remove_objs)
         objects = unique_objs.copy()
         list_ids = [x.id for x in unique_objs]
-        
+    
         if id_obj in list_ids:
         
             obj_id, obj_lon, obj_orb, obj_lonsp, obj_house = AspectsPrepare.object_data(objects, id_obj)
             obj_orb = AspectsPrepare.type_orb_calculate(obj_orb, before_point_asp, after_orb, before_orb)
-            AspectsPrepare.remove_objects(objects, [obj_id])
+            objects = AspectsPrepare.remove_objects(objects, [obj_id])
             
             for incl_obj in objects:
                 for type_asp, deg in aspekts_degrees.items():
-
-                    orb_con = AspectsPrepare.switching_ranges_with_orb(incl_obj.lon, obj_lon, obj_orb, deg, before_point_asp)
-                    if orb_con:
+                    orb = AspectsPrepare.switching_ranges_with_orb(incl_obj.lon, obj_lon, obj_orb, deg, before_point_asp)
+                    if orb:
                         asp = type_asp
-                        type_appr = AspectsPrepare.type_approach(incl_obj.lon, incl_obj.lonspeed, obj_lon, obj_lonsp, obj_house, deg)
-                        orb_con = AspectsPrepare.degree_transform(orb_con)
+                        type_appr = AspectsPrepare.type_approach(incl_obj.lon, incl_obj.lonspeed, obj_lon, obj_lonsp, obj_orb, obj_house, deg, before_point_asp)
+                        tr_orb = AspectsPrepare.degree_transform(orb)
                         sing = AspectsPrepare.equal_different_sing_feature(singles_degrees, incl_obj.lon, obj_lon, deg)
                     else:
-                        asp, type_appr, orb_con, sing = None, None, None, None
+                        asp, type_appr, tr_orb, sing = None, None, None, None
                     
-                    point_aspects = {'f_point': id_obj, 's_point': incl_obj.id, 'type': asp, 'approach': type_appr, 'sing': sing, 'orb': orb_con}
+                    point_aspects = {'f_point': id_obj, 's_point': incl_obj.id, 'type': asp, 'approach': type_appr, 'sing': sing, 'orb': orb, 'tr_orb': tr_orb, 
+                                     'longs': [round(obj_lon, 2), round(incl_obj.lon, 2)], 'bp_asp': before_point_asp}
 
                     if point_aspects['type'] != None:
                         all_aspekts.append(point_aspects)
@@ -492,8 +500,177 @@ class AspectsPrepare:
                     all_dict.append(x)    
         
         return all_dict
+    
+    @staticmethod
+    # The Moon can't be ruler
+    def find_rulers_and_pars(tuple_list: list):
+        rulers_dict = dict()
 
+        for var in tuple_list:
+            var_list = var[0].split('_&_')
+            for obj in var_list:
+                if obj.startswith('ruler_'):
+                    rulers_dict[obj] = var[1]
 
+        list_objs = set(list(rulers_dict.values()))
+        points = dict()
+        all_ruler_points = dict()
+
+        for obj in list_objs:
+            if obj == 'Moon':
+                continue
+            incl_obj = []
+            incl_part = []
+            for key, val in rulers_dict.items():
+                if obj == val:
+                    incl_obj.append(key)
+                    ch_key = key.replace('ruler_','').replace('_', ' ').title()
+                    if ch_key in ['Ic', 'Mc']:
+                        ch_key = ch_key.upper()
+                    incl_part.append(ch_key)
+                    points[obj] = (incl_obj, incl_part)
+                    all_ruler_points.update(points)
+
+        return all_ruler_points  
+    
+    @staticmethod
+    def find_rulers_parses_aspects(list_aspects: list, tuple_list: list):
+        rulers_dict = AspectsPrepare.find_rulers_and_pars(tuple_list)
+        rulers_aspects = []
+
+        for key, values in rulers_dict.items():
+
+            for asp in list_aspects:
+                if asp['f_point'] == key or asp['s_point'] == key:
+                    for val in values[1]:
+                        if asp['f_point'] == val or asp['s_point'] == val: 
+                            rulers_aspects.append(asp)
+                            ind = values[1].index(val)
+                            asp['charact'] = values[0][ind]
+                            asp['all_characts'] = values[0]
+
+        return rulers_aspects 
+    
+    @staticmethod
+    def find_other_long_in_range_long_orb(objects: object, f_point: str, f_point_lon: float, s_point: str, asp_orb: int, asp_type: str, asp_sing: str,
+                                          before_point_asp = 'no'):
+        objs_longs = [{'id': x.id, 'lon': x.lon} for x in objects]
+        all_find = []
+        all_ids = []
+
+        for obj in objs_longs:
+            if obj['id'] == f_point or obj['id'] == s_point:
+                continue
+
+            asp_deg = AstrologicalConstants.aspekts_degrees.get(asp_type)
+            obj_lon_degs = AspectsPrepare.pos_neg_points_orb(f_point_lon, asp_orb, asp_deg, before_point_asp)
+
+            if any(isclose(round(obj['lon'], 2), arange(round(x[0], 2), round(x[1], 2), 0.01)).any() for x in obj_lon_degs):
+                all_find.append(1)
+                all_ids.append(obj['id'])
+            else:
+                all_find.append(0)
+
+        if 1 in all_find:
+            return ['yes', all_ids]
+        else:
+            return ['no', all_ids]
+    
+    @staticmethod
+    def find_moon_parts_conv_aspects(list_aspects: list):
+        parts = AstrologicalConstants.parts
+        all_moon_asps = []
+
+        for asp in list_aspects:
+            if asp['f_point'] == 'Moon' and asp['s_point'] in parts and asp['approach'] == 'conv' and asp['sing'] == 'equal':
+                all_moon_asps.append(asp)
+
+        return all_moon_asps
+    
+    @staticmethod
+    def supplement_houses_and_parts_rulers_aspects(objects: object, list_aspects: list, tuple_list: list):
+        find_asps = AspectsPrepare.find_rulers_parses_aspects(all_aspects_full, tuple_list)
+        mp_aspects = AspectsPrepare.find_moon_parts_conv_aspects(list_aspects)
+        houses_ids = ['Asc', 'Dsc', 'IC', 'MC']
+
+        for asp in find_asps:
+            if asp['sing'] == 'diff':
+                if asp['f_point'] in houses_ids:
+                    approach = asp['approach'] + '_weak'
+                else:
+                    approach = asp['approach'] + '_denide'
+
+                asp['approach'] = approach
+                asp['den_point'] = ['diff_sing']
+            else: 
+                find_long = AspectsPrepare.find_other_long_in_range_long_orb(objects, asp['f_point'], asp['longs'][0], asp['s_point'], asp['orb'], 
+                                                          asp['type'], asp['sing'], asp['bp_asp'])
+                type_appr = asp['approach'].split('_')
+
+                if any(asp['f_point'] == mp_asp['s_point'] or asp['s_point'] == mp_asp['s_point'] for mp_asp in mp_aspects) and \
+                asp['f_point'] not in houses_ids:
+                    for mp_aspect in mp_aspects:
+                        if asp['f_point'] == mp_aspect['s_point'] or asp['s_point'] == mp_aspect['s_point']:
+                            approach = asp['approach'] + '_denide'
+
+                            asp['approach'] = approach
+                            asp['den_point'] = ['Moon', [mp_aspect['type'], mp_aspect['tr_orb']]]
+
+                elif 'conv' in type_appr: 
+                    if find_long[0] == 'yes':
+                        if asp['f_point'] in houses_ids:
+                            approach = asp['approach'] + '_weak'
+                        else:   
+                            approach = asp['approach'] + '_denide'
+                    else:   
+                        approach = asp['approach'] + '_compl'
+
+                    asp['approach'] = approach
+                    asp['den_point'] = find_long[1]
+
+                elif 'diver' in type_appr:
+                    if asp['f_point'] in houses_ids:
+                        approach = asp['approach'] + '_weak'
+                    else:
+                        if find_long[0] == 'yes':
+                            approach = asp['approach'] + '_denide'
+                        else:   
+                            approach = asp['approach'] + '_weak'
+
+                    asp['approach'] = approach
+                    asp['den_point'] = find_long[1]      
+
+    @staticmethod                
+    def supplement_conv_stat_aspects(objects: object, list_aspects: list):
+        characts = ['conv', 'stat', 'in_conv', 'in_stat', 'out_conv', 'out_stat', 'out_diver', 'in_diver']
+
+        for asp in list_aspects:
+            if asp['f_point'] == 'Moon':
+                continue
+            if asp['approach'] not in characts:
+                continue
+
+            if asp['sing'] == 'diff':
+                if asp['approach'] in characts[2:]:
+                    approach = asp['approach'] + '_weak'
+                else: 
+                    approach = asp['approach'] + '_denide'
+
+                asp['approach'] = approach
+                asp['den_point'] = ['diff_sing']
+                continue 
+            else:
+                find_long = AspectsPrepare.find_other_long_in_range_long_orb(objects, asp['f_point'], asp['longs'][0], asp['s_point'], asp['orb'], 
+                                                              asp['type'], asp['sing'], asp['bp_asp'])
+                if find_long[0] == 'yes': 
+                    approach = asp['approach'] + '_weak'
+
+                    asp['approach'] = approach
+                    asp['den_point'] = find_long[1]
+                else:
+                    continue
+                    
+                    
     
 class AspectsClearing:
     
@@ -504,28 +681,47 @@ class AspectsClearing:
         for val in list_dicts:
             for val_cp in list_dicts_cp:
                 if val['f_point'] == val_cp['s_point'] and val_cp['f_point'] == val['s_point']:
-                    list_dicts.remove(val_cp)
-                    
+                    list_dicts.remove(val_cp)                                                  
+    
     @staticmethod
-    def remove_antes_repeat_aspects(list_dicts: list):
-        list_dicts_cp = list_dicts.copy()
-        active_planets = AstrologicalConstants.active_planets
+    # Only for natural points in list.
+    def create_possibly_antes_aspects(list_points: list):
+        possibly_asps = []
+        for points in list_points:
+            aspects = [[points[0], 'Antes '+ points[1]], ['Antes '+ points[1], points[0]],
+                       ['Antes '+ points[0], points[1]], [points[1], 'Antes '+ points[0]],
+                       [points[0], 'Antes '+ points[0]], ['Antes '+ points[0], points[0]],
+                       [points[1], 'Antes '+ points[1]], ['Antes '+ points[1], points[1]],
+                       ['Antes '+ points[0], 'Antes '+ points[1]], 
+                       ['Antes '+ points[1], 'Antes '+ points[0]]]
 
-        for val in list_dicts:
-            for val_cp in list_dicts_cp:
-                if ('Antes '+ val['f_point']) == val_cp['s_point'] and val['s_point'] == ('Antes '+ val_cp['f_point']):
-                    if val['f_point'] not in active_planets:
-                        list_dicts.remove(val)
-                        
-    @staticmethod
-    def remove_duble_antes_aspects(list_dicts: list):
-        list_dicts_cp = list_dicts.copy()
+            possibly_asps.append(aspects)
 
-        for val in list_dicts:
-            for val_cp in list_dicts_cp:
-                if ('Antes '+ val['f_point']) == val_cp['s_point'] and ('Antes '+ val['s_point']) == val_cp['f_point']:
-                        list_dicts.remove(val_cp) 
-                        
+        all_possibly_asps = []
+        for asp in possibly_asps:
+            while len(asp) > 0:
+                var = asp.pop()
+                all_possibly_asps.append(var)
+
+        return  all_possibly_asps
+    
+    @staticmethod 
+    # Check example: 'Mercury.lon = 179, 'Antes Mercury'.lon = 358,  'Chirone.lon = 359, 'Antes Chirone'.lon = 180 - with five aspects's anteses 
+    def remove_antes_unimportant_aspects(list_aspects: list):
+        natural_asps = []
+
+        for asp in list_aspects:
+            if asp['f_point'] == 'Moon':
+                continue
+            if not asp['f_point'].startswith('Antes') and not asp['s_point'].startswith('Antes'):  
+                natural_asps.append([asp['f_point'], asp['s_point']])
+
+        nat_dict = AspectsClearing.create_possibly_antes_aspects(natural_asps)
+
+        for asp in list_aspects[:]:   
+            if [asp['f_point'], asp['s_point']] in nat_dict:
+                list_aspects.remove(asp)
+    
     @staticmethod
     def remove_node_opposition(list_dicts: list):
         list_dicts_cp = list_dicts.copy()
@@ -538,14 +734,11 @@ class AspectsClearing:
                     if val['f_point'] == val_cp['f_point'] and val['s_point'] == val_cp['s_point'] and val['type'] == 'Opp':
                         list_dicts.remove(val_cp)
     
-    
-    
-    
-    
-    
-    
-    
-    
+    @staticmethod
+    def remove_antes_with_own_nat_point_aspects(list_dicts: list):
+        for val in list_dicts:
+            if val['f_point'] == 'Antes '+ val['s_point'] or 'Antes '+ val['f_point'] == val['s_point']:
+                list_dicts.remove(val)
     
     
     
