@@ -19,6 +19,8 @@ class AstrologicalConstants:
     
     houses_objects      = ['asc', 'desc', 'mc', 'ic']
     
+    houses              = ['Asc', 'IC', 'Desc', 'MC']
+    
     rulers_constants    = ['ASC', 'DESC', 'MC', 'IC', 'PARS_FORTUNA']
     
     necessary_constants = ['SUN', 'MOON', 'SATURN', 'URANUS', 'NEPTUNE', 'PLUTO', 'CHIRON', 'NORTH_NODE', 'SOUTH_NODE']
@@ -552,6 +554,18 @@ class AspectsPrepare:
         return rulers_aspects 
     
     @staticmethod
+    def find_houses_rulers(tuple_list: list):
+        houses = AstrologicalConstants.houses
+        rulers = AspectsPrepare.find_rulers_and_pars(tuple_list)
+    
+        houses_ruls = []
+        for key, val in rulers.items():
+            if any(x in houses for x in val[1]):
+                houses_ruls.append(key)
+    
+        return houses_ruls
+    
+    @staticmethod
     def find_other_long_in_range_long_orb(objects: object, f_point: str, f_point_lon: float, s_point: str, asp_orb: int, asp_type: str, asp_sing: str,
                                           before_point_asp = 'no'):
         objs_longs = [{'id': x.id, 'lon': x.lon} for x in objects]
@@ -591,7 +605,7 @@ class AspectsPrepare:
     def supplement_houses_and_parts_rulers_aspects(objects: object, list_aspects: list, tuple_list: list):
         find_asps = AspectsPrepare.find_rulers_parses_aspects(list_aspects, tuple_list)
         mp_aspects = AspectsPrepare.find_moon_parts_conv_aspects(list_aspects)
-        houses_ids = ['Asc', 'Dsc', 'IC', 'MC']
+        houses_ids = AstrologicalConstants.houses
 
         for asp in find_asps:
             if asp['sing'] == 'diff':
@@ -669,8 +683,135 @@ class AspectsPrepare:
                     asp['den_point'] = find_long[1]
                 else:
                     continue
-                    
-                    
+     
+    @staticmethod
+    def moon_unite_converge_aspects_orbs(list_aspects: list):   
+        moon_asps = []
+
+        for asp in list_aspects:
+            if asp['f_point'] != 'Moon':
+                continue    
+            if asp['approach'] == 'conv': 
+                var = [asp['s_point'], asp['type'], asp['orb']]
+                moon_asps.append(var)
+
+        return moon_asps
+    
+    @staticmethod
+    # return list all points aspected 'Con' type and all types for active planets aspected beefore 
+    def find_moon_other_longs_in_range_with_degs(objects: object, f_point: str, f_point_lon: float, s_point: str, asp_orb: int, asp_sing: str):
+        main_points = AstrologicalConstants.active_planets + ['Pars Fortuna']
+        antes_main_points = ['Antes '+ x for x in main_points]
+        degs = AstrologicalConstants.aspekts_degrees.keys()
+        all_find_longs = []
+
+        for deg in degs:
+            find_long = AspectsPrepare.find_other_long_in_range_long_orb(objects, f_point, f_point_lon, s_point, asp_orb, deg, asp_sing)
+            if find_long[0] == 'yes':
+                find_long[1].append(deg)
+                all_find_longs.append(find_long[1])
+
+        den_points = []
+        for var in all_find_longs:
+            if var[-1:] == ['Con']:
+                var.pop()
+                while len(var) > 0:
+                    den_points.append(var.pop())
+            else:
+                var.pop()
+                for v in var:
+                    if v in main_points + antes_main_points:
+                        den_points.append(v)
+
+        return den_points 
+    
+    @staticmethod
+    def supplement_moon_complete_denide_weak_aspects(objects: object, list_aspects: list, tuple_list: list):
+        houses_ruls = AspectsPrepare.find_houses_rulers(tuple_list)
+        antes_hruls = ['Antes '+ rul for rul in houses_ruls] 
+        parses      = ['Pars Fortuna', 'Antes Pars Fortuna']
+
+        for asp in list_aspects:
+            if asp['f_point'] != 'Moon':
+                continue
+            if asp['sing'] == 'diff':
+                approach = 'moon_'+ asp['approach'] +'_denide'
+
+                asp['approach'] = approach
+                asp['den_point'] = ['diff_sing']
+
+            if asp['tr_orb'] > 5.1:
+                approach = 'moon_'+ asp['approach'] +'_denide'
+
+                asp['approach'] = approach
+                asp['den_point'] = ['more_orb']
+
+            if asp['approach'] == 'diver':
+                find_long = AspectsPrepare.find_other_long_in_range_long_orb(objects, asp['f_point'], asp['longs'][0], asp['s_point'], asp['orb'], 
+                                                                             asp['type'], asp['sing'], asp['bp_asp'])
+                if find_long[0] == 'yes':
+                    approach = 'moon_'+ asp['approach'] +'_weak'
+
+                    asp['approach'] = approach
+                    asp['den_point'] = find_long[1]
+                else:
+                    approach = 'moon_'+ asp['approach']
+
+                    asp['approach'] = approach
+                    asp['den_point'] = find_long[1]
+
+            if asp['approach'] == 'conv':
+                moon_asps = AspectsPrepare.moon_unite_converge_aspects_orbs(list_aspects)
+
+                if len(moon_asps) > 0:
+                    moon_orbs        = [x[2] for x in moon_asps]
+                    spoints          = [x[0] for x in moon_asps]
+                    main_moon_orbs   = [x[2] for x in moon_asps if x[0] in houses_ruls + parses]
+                    antes_house_orbs = [x[2] for x in moon_asps if x[0] in antes_hruls]
+
+                if asp['s_point'] not in houses_ruls + antes_hruls + parses:
+                    approach = 'moon_'+ asp['approach']
+                    asp['approach'] = approach
+                else:
+                    spoints_cp = spoints.copy()
+                    spoints_cp.remove(asp['s_point'])
+
+                    if (asp['s_point'] in parses and all(asp['orb'] <= orb for orb in moon_orbs)) or \
+                    (asp['s_point'] in houses_ruls and asp['type'] == 'Con' and all(asp['orb'] <= orb for orb in moon_orbs)) or \
+                    (asp['s_point'] in houses_ruls and all(asp['orb'] <= orb for orb in moon_orbs) and all(x not in houses_ruls + parses for x in spoints_cp)):                   
+                        approach = 'moon_'+ asp['approach']+ '_clear_compl'
+                        asp['approach'] = approach
+
+                    elif (asp['s_point'] in parses and all(asp['orb'] <= orb for orb in main_moon_orbs)) or \
+                    (asp['s_point'] in houses_ruls and asp['type'] == 'Con' and all(asp['orb'] <= orb for orb in main_moon_orbs)) or \
+                    (asp['s_point'] in houses_ruls and all(asp['orb'] <= orb for orb in main_moon_orbs) and \
+                    all(sp not in houses_ruls + parses for sp in spoints_cp)): 
+                        find_longs = AspectsPrepare.find_moon_other_longs_in_range_with_degs(objects, asp['f_point'], asp['longs'][0], asp['s_point'],
+                                                                                             asp['orb'], asp['sing'])
+                        approach = 'moon_'+ asp['approach']+ '_compl'
+                        asp['approach'] = approach
+                        asp['den_point'] = [find_longs, ['not_ruls']] 
+
+                    elif (asp['s_point'] in parses and any(asp['orb'] > orb for orb in main_moon_orbs)) or \
+                    (asp['s_point'] in houses_ruls and asp['type'] == 'Con' and any(asp['orb'] > orb for orb in main_moon_orbs)) or \
+                    (asp['s_point'] in houses_ruls and all(asp['orb'] >= orb for orb in main_moon_orbs) and \
+                    any(sp in houses_ruls + parses for sp in spoints_cp)) or \
+                    (asp['s_point'] in antes_hruls and all(asp['orb'] >= orb for orb in antes_house_orbs) and \
+                    all(sp not in houses_ruls + parses for sp in spoints_cp)):
+                        find_longs = AspectsPrepare.find_moon_other_longs_in_range_with_degs(objects, asp['f_point'], asp['longs'][0], asp['s_point'],
+                                                                                             asp['orb'], asp['sing'])
+                        approach = 'moon_'+ asp['approach']+ '_compl_weak'
+                        asp['approach'] = approach
+
+                        if asp['s_point'] in antes_hruls:
+                            asp['den_point'] = [find_longs,['antes_ruls']]
+                        else:    
+                            asp['den_point'] = [find_longs,['with_ruls']] 
+
+                    else:
+                        approach = 'moon_'+ asp['approach'] 
+                        asp['approach'] = approach
+
     
 class AspectsClearing:
     
@@ -727,7 +868,7 @@ class AspectsClearing:
         list_dicts_cp = list_dicts.copy()
         node_list = ['North Node', 'South Node']
 
-        for val in list_dicts:
+        for val in list_dicts[:]:
             for val_cp in list_dicts_cp:
                 if (val['f_point'] in node_list or val['s_point'] in node_list) and \
                 (val_cp['f_point'] in node_list or val_cp['s_point'] in node_list):
@@ -736,15 +877,89 @@ class AspectsClearing:
     
     @staticmethod
     def remove_antes_with_own_nat_point_aspects(list_dicts: list):
-        for val in list_dicts:
+        for val in list_dicts[:]:
             if val['f_point'] == 'Antes '+ val['s_point'] or 'Antes '+ val['f_point'] == val['s_point']:
                 list_dicts.remove(val)
     
+    @staticmethod
+    # If natural points aspect don't exist. Save houses ruler's aspects.
+    def remove_mirror_antes_aspects(list_aspects: list, tuple_list: list): 
+        houses_ruls = AspectsPrepare.find_houses_rulers(tuple_list)
+
+        cut_names = []
+        for ind, asp in enumerate(list_aspects):
+            if asp['f_point'] == 'Moon':
+                continue
+            if asp['f_point'].startswith('Antes'):    
+                cut_names.append([ind, asp['f_point'].split('Antes ')[1], asp['s_point']])
+            elif asp['s_point'].startswith('Antes'):    
+                cut_names.append([ind, asp['f_point'], asp['s_point'].split('Antes ')[1]])
+
+        cut_names_cp = cut_names.copy()
+        find_asps = []
+
+        for names in cut_names[:]:
+            cut_names_cp.remove(names)
+            for names_cp in cut_names_cp:
+                if names[1] == names_cp[1] and names[2] == names_cp[2] or \
+                names[1] == names_cp[2] and names[2] == names_cp[1]:
+                    find_asps.append([list_aspects[names[0]], list_aspects[names_cp[0]]])        
+
+        for f_asp in find_asps:
+            if (f_asp[0]['f_point'] in houses_ruls or f_asp[0]['s_point'] in houses_ruls) and \
+            (f_asp[1]['f_point'] in houses_ruls or f_asp[1]['s_point'] in houses_ruls):
+                list_aspects.remove(f_asp[0])
+            elif (f_asp[0]['f_point'] in houses_ruls or f_asp[0]['s_point'] in houses_ruls) and \
+            (f_asp[1]['f_point'] not in houses_ruls or f_asp[1]['s_point'] not in houses_ruls):
+                list_aspects.remove(f_asp[1])
+            elif (f_asp[1]['f_point'] in houses_ruls or f_asp[1]['s_point'] in houses_ruls) and \
+            (f_asp[0]['f_point'] not in houses_ruls or f_asp[0]['s_point'] not in houses_ruls):
+                list_aspects.remove(f_asp[0])   
+            else:
+                list_aspects.remove(f_asp[0])
     
+    @staticmethod
+    def remove_mirror_houses_antes_conuction(list_aspects: list): 
+        houses = AstrologicalConstants.houses
+
+        list_aspects_cp = list_aspects.copy()
+        for asp in list_aspects[:]:
+            if asp['f_point'] not in houses:
+                continue
+            for asp_cp in list_aspects_cp:
+                if asp_cp['f_point'] not in houses:
+                    continue
+                if (asp['f_point'] in ['Asc', 'Desc'] and not asp['s_point'].startswith('Antes')) and \
+                (asp_cp['f_point'] in ['Asc', 'Desc'] and 'Antes '+ asp['s_point'] == asp_cp['s_point']):
+                    list_aspects.remove(asp_cp)
+                elif (asp['f_point'] in ['IC', 'MC'] and not asp['s_point'].startswith('Antes')) and \
+                (asp_cp['f_point'] in ['IC', 'MC'] and 'Antes '+ asp['s_point'] == asp_cp['s_point']):
+                    list_aspects.remove(asp_cp)
     
-    
-    
-    
+    @staticmethod
+    def remove_houses_one_nodes_conuction(list_aspects: list): 
+        houses = AstrologicalConstants.houses
+        node_list = ['North Node', 'South Node']
+
+        node_asps = []
+        list_aspects_cp = list_aspects.copy()
+        for asp in list_aspects:
+            if asp['f_point'] not in houses:
+                continue
+            if (asp['f_point'] in ['Asc', 'Desc'] and asp['s_point'] in node_list):
+                node_asps.append(asp)
+            elif (asp['f_point'] in ['IC', 'MC'] and asp['s_point'] in node_list):
+                node_asps.append(asp)
+        
+        if node_asps:
+            if all(n_asp['den_point'] == [] for n_asp in node_asps):
+                list_aspects.remove(node_asps[0])
+            elif all(n_asp['den_point'] != [] for n_asp in node_asps):
+                list_aspects.remove(node_asps[0])   
+            else:
+                for n_asp in node_asps:
+                    if n_asp['den_point'] != []:
+                        list_aspects.remove(n_asp)
     
     
     
