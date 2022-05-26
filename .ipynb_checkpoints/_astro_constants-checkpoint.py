@@ -812,6 +812,45 @@ class AspectsPrepare:
                         approach = 'moon_'+ asp['approach'] 
                         asp['approach'] = approach
 
+    @staticmethod
+    def aspects_rulers_characteristic(tuple_list: list, list_aspects: list):
+        main_rulers         = AstrologicalConstants.ruler_objects[:5]
+        second_rulers       = AstrologicalConstants.ruler_objects[5:]
+        antes_main_rulers   = ['antes_'+ x for x in main_rulers]
+        antes_second_rulers = ['antes_'+ x for x in second_rulers]
+
+        char_list = []
+        for var in tuple_list:
+            char = var[0].split('_&_')
+            char.append(var[1])
+            char_list.append(char)
+
+        for asp in list_aspects:
+            fmain_ch, fsec_ch, smain_ch, ssec_ch = [], [], [], []
+            for var in char_list:
+                if asp['f_point'] == ''.join(var[-1:]):
+                    for v in var:
+                        if v in main_rulers + antes_main_rulers:
+                            fmain_ch.append(v)
+                        elif v in second_rulers + antes_second_rulers:
+                            fsec_ch.append(v)
+
+                    asp['fmain_ch'] = fmain_ch
+                    asp['fsec_ch']  = fsec_ch
+
+                elif asp['s_point'] == ''.join(var[-1:]):
+                    for v in var:
+                        if v in main_rulers + antes_main_rulers:
+                            smain_ch.append(v)
+                        elif v in second_rulers + antes_second_rulers:
+                            ssec_ch.append(v)
+
+                    asp['smain_ch'] = smain_ch
+                    asp['ssec_ch']  = ssec_ch
+       
+    @staticmethod
+    
+                        
     
 class AspectsClearing:
     
