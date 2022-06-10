@@ -95,6 +95,58 @@ class ParsingDataPrepare:
             sr = sr.map(lambda x: x.replace(symb, '') if symb in str(x) else x)
         return sr 
 
+    @staticmethod
+    def create_df_comp_tables(tables_list: list):
+        df = pd.DataFrame()
+
+        for x in range(0, len(tables_list)):
+            for y in range(0, len(tables_list[x])):
+                comp_id = tables_list[x][y]['comp_id']
+                season_id = tables_list[x][y]['season_id'] 
+                table = tables_list[x][y]['table']
+
+                all_data = dict()
+                for team_name, v_tab in table.items():
+                    data = pd.DataFrame({
+                         'team_name' : [team_name[0]],
+                         'team_id'   : [team_name[1]],
+                         'pos'       : [v_tab['Pos']],
+                         'pld'       : [v_tab['Pld']],
+                         'w'         : [v_tab['W']],
+                         'd'         : [v_tab['D']],
+                         'l'         : [v_tab['L']],
+                         'gf'        : [v_tab['GF']],
+                         'ga'        : [v_tab['GA']],
+                         '+/-'       : [v_tab['+/-']],
+                         'pts'       : [v_tab['Pts']],
+                         'comp_id'   : [comp_id],
+                         'season_id' : [season_id]
+                        })
+                    df = pd.concat([df, data])
+        df = df.reset_index(drop=True)   
+
+        return df
+
+    @staticmethod
+    def competition_season_ids(df: pd.DataFrame, col_comp='comp_id', col_season='season_id'):
+        comp_seasons = df.groupby(col_comp)[col_season].agg(lambda x: x.unique().tolist())
+        comp_seasons = comp_seasons.to_dict()
+        for key, value in comp_seasons.items():
+            comp_seasons[key] = [x for x in value if re.search(r'[0-9]+', str(x))]
+
+        return comp_seasons
+    
+    @staticmethod
+    # '8/18/2008' - str date format
+    def count_days_by_dates(start_date: str, end_date: str):
+        date_format = "%m/%d/%Y"
+        a = datetime.datetime.strptime(start_date, date_format)
+        b = datetime.datetime.strptime(end_date, date_format)
+        delta = b - a
+        numdays = abs(delta.days)
+
+        return numdays
+    
 
 class HtmlParser:
     
@@ -103,7 +155,11 @@ class HtmlParser:
         now = datetime.datetime.now()
         dates = []
         for obj in list_obj:
-            if re.search(r'[a-zA-Z]', obj):
+            if len(obj) == 16:
+                date = obj
+            elif len(obj) == 17:
+                date = re.sub(',', '', obj)   
+            elif re.search(r'[a-zA-Z]', obj):
                 date = ''.join(re.findall(r'[a-zA-Z]+', obj))
             elif (len(obj) == 12) & (re.search(r'[a-zA-Z]', obj) is None):
                 date = obj.replace(',', '.' + str(now.year))
@@ -152,7 +208,8 @@ class HtmlParser:
 
             game_titles = [x.get('title') for x in each_tb.find_all('a', {'class': 'game_link'})]
 
-            game_times_utc = [x.get_text() for x in each_tb.find_all('span', {'class': 'size10'})]
+            game_times_utc = [x.get_text() for x in each_tb.find_all('span', {'class': 'size10'})] 
+            # game_times_utc = [x if len(str(x)) > 10 else None for x in game_times_utc]
             game_times_utc = HtmlParser.transform_date(game_times_utc)
 
             game_statuses  = [x if re.search('[a-zA-Z]', str(x)) else 'Finished' for x in game_times_utc]
@@ -172,17 +229,6 @@ class HtmlParser:
         return all_matches_db
     
     @staticmethod
-    # '8/18/2008' - str date format
-    def count_days_by_dates(start_date: str, end_date: str):
-        date_format = "%m/%d/%Y"
-        a = datetime.datetime.strptime(start_date, date_format)
-        b = datetime.datetime.strptime(end_date, date_format)
-        delta = b - a
-        numdays = abs(delta.days)
-
-        return numdays
-    
-    @staticmethod
     # 7-11-2013 last day with bet's data on soccer365, 2697 - days before now
     def create_date_list(numdays: int, start_year: int, start_month: int, start_day: int):
         base = datetime.date(start_year, start_month, start_day)
@@ -193,7 +239,7 @@ class HtmlParser:
     @staticmethod
     # function take url without date
     def parsing_write_by_date(numdays: int, start_year: int, start_month: int, start_day: int, file_name: str, 
-                                                                                    start_url='https://soccer365.me/online/&date='):
+                                                                start_url='https://soccer365.me/online/&date='):
         date_list = HtmlParser.create_date_list(numdays, start_year, start_month, start_day)
         all_matches_db = {}
         for date in date_list:
@@ -355,11 +401,50 @@ class HtmlParser:
         
         return print('Teams data saved with last id: {}'.format(teams_id))
     
+    @staticmethod
+    # https://soccer365.me/?c=live&a=showtable&competition_id=1157&season_id=306
+    def parsing_competition_tables(comps_dict: dict, start_url='https://soccer365.me/?c=live&a=showtable'):
+        all_comps_seasons = list()
+        for comp, seasons in comps_dict.items():
+
+            all_seasons = list()
+            for season in seasons:
+                url = start_url + '&competition_id=' + comp + '&season_id=' + season
+                html = requests.get(url).content
+                soup = BeautifulSoup(html, "html.parser") 
+                regular_seasons = [x for x in soup.find_all('table', {'class':'stngs'})]
+                
+                if regular_seasons != []:
+                    print(comp, season)
+                    tb_header = [x.get_text() for x in soup.find_all('th', {'class': 'ctr'})]
+
+                    key_pos = ['Pos']
+                    places = [x.get_text() for x in soup.find_all('div', {'class': 'plc'})]
+                    place_num = [re.findall('[0-9]+', x) for x in places]
+                    place_num = list(filter(None, place_num))
+                    places_dict = [dict(zip(key_pos, x)) for x in place_num]
+
+                    scores = [x.get_text() for x in soup.find_all('td', {'class': 'ctr'})]  
+                    each_score = re.split(r'\\n\',', str(scores))
+                    clear_each_sc = [re.findall(r'[0-9+-]+', x) for x in each_score]
+                    score_dict = [dict(zip(tb_header, x)) for x in clear_each_sc]
+                    _ = [x.update(y) for x, y in zip(score_dict, places_dict)]
+
+                    teams_names     = [x.get_text() for x in soup.find_all('div', {'class': 'img16'})]
+                    div_ids         = [x for x in soup.find_all('div', {'class': 'img16'})]
+                    teams_ids       = [''.join(HtmlParser.cut_part_of_string(str(x), '/clubs/', '/" ')) for x in div_ids]
+                    times_names_ids = zip(teams_names, teams_ids)
+                    teams_score     = dict(zip(times_names_ids, score_dict))   
+                    
+                    comps_seasons = {'comp_id': comp, 'season_id': season}
+                    comps_seasons['table'] = teams_score
+
+                    all_seasons.append(comps_seasons)
+            all_comps_seasons.append(all_seasons)
+
+        return all_comps_seasons   
     
-    
-    
-    
-    
+
 
 
 
