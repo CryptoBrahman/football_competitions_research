@@ -13,18 +13,21 @@ import pandas as pd
 from bs4 import BeautifulSoup
 from Lat_lon.lat_lon import LatLon, Latitude, Longitude
 
+from  geopy.geocoders import Nominatim
+geolocator = Nominatim(user_agent="Your_Name")
+
 
 class TableConstant:
     
     top_ligues    = ['12', '13', '14', '15', '16', '17', '18', '419', '420', '454', '456', '474', '483', '485', '550', '554', '560', 
-                     '565', '577', '581', '587', '591','596', '601', '677', '681', '684', '695', '699', '707', '712', '716', '723', '727']
+                     '565', '577', '581', '587', '591', '596', '601', '677', '681', '684', '695', '699', '707', '712', '716', '723', '727']
     
-    second_ligues = ['419', '424', '435', '436', '437', '444', '446', '449', '450', '457', '459', '464', '473', '477', '491'
+    second_ligues = ['419', '424', '435', '436', '437', '444', '446', '449', '450', '457', '459', '464', '473', '477', '491',
                      '493', '496', '498', '500', '502', '504', '507', '512', '516', '518', '523', '532', '539', '540', '542',
                      '544', '545', '546', '548', '551', '555', '562', '567', '576', '585', '586', '589', '595', '599', '602',
                      '606', '621', '622', '625', '626', '628', '632', '634', '636', '637', '642', '646', '647', '648', '653',
                      '654', '655', '657', '659', '660', '667', '672', '674', '675', '676', '679', '685', '687', '691', '692', '697',
-                     '700', '703', '704', '714', '715', '720', '721', '725', '727', '733''735', '747', '761', '912', '1157', '1259'] 
+                     '700', '703', '704', '714', '715', '720', '721', '725', '727', '733', '735', '747', '761', '912', '1157', '1259'] 
 
 
 
@@ -146,7 +149,32 @@ class ParsingDataPrepare:
         numdays = abs(delta.days)
 
         return numdays
-    
+ 
+    @staticmethod
+    def get_minvalue_ind(inputlist: list):
+        min_value = min(inputlist) 
+        min_index=inputlist.index(min_value)
+
+        return min_index
+
+    @staticmethod
+    # For 'bets' and 'pos' coefs use 'min' method, for 'pts' - 'max' method.
+    def roles_determinate(inputlist, power_coef: float, method: str):
+        if method != 'min' and method != 'max':
+            print("Unsuported value in sinlge('min','max')")
+
+        if None in inputlist:
+            return None
+
+        if method == 'min':
+            roles_dict = {0:'Fav', 1:'Pre'}   
+        if method == 'max':
+            roles_dict = {0:'Pre', 1:'Fav'}
+
+        if power_coef * inputlist[ParsingDataPrepare.get_minvalue_ind(inputlist)] < inputlist[~ParsingDataPrepare.get_minvalue_ind(inputlist)]:
+                return roles_dict[ParsingDataPrepare.get_minvalue_ind(inputlist)]
+        else: 
+            return 'Neu'
 
 class HtmlParser:
     
@@ -209,7 +237,6 @@ class HtmlParser:
             game_titles = [x.get('title') for x in each_tb.find_all('a', {'class': 'game_link'})]
 
             game_times_utc = [x.get_text() for x in each_tb.find_all('span', {'class': 'size10'})] 
-            # game_times_utc = [x if len(str(x)) > 10 else None for x in game_times_utc]
             game_times_utc = HtmlParser.transform_date(game_times_utc)
 
             game_statuses  = [x if re.search('[a-zA-Z]', str(x)) else 'Finished' for x in game_times_utc]
@@ -275,7 +302,14 @@ class HtmlParser:
 
                 event_hts_ats = [y if x == [] else x for x, y in zip(event_hts, event_ats)]
                 event_hts_ats = [''.join(x) for x in event_hts_ats]
-
+                
+                team_id_hts = soup.find('div', {'class':'live_game_ht'})
+                team_id_hts = ''.join(HtmlParser.cut_part_of_string(str(team_id_hts), '/clubs/', '/\">'))
+                team_id_ats = soup.find('div', {'class':'live_game_at'})
+                team_id_ats = ''.join(HtmlParser.cut_part_of_string(str(team_id_ats), '/clubs/', '/\">'))
+                
+                teams_ids  = team_id_hts + ' - ' + team_id_ats
+                
                 stats_items = soup.find_all("div", {"class": "stats_item"})
                 stats_dict = []
                 
@@ -320,7 +354,7 @@ class HtmlParser:
 
                 bet_coeffs = bet_titeles, coeffs
 
-                events = {game_id:[event_mins, event_hts_ats, stats_dict, city_country, viewers, weath_temp, bet_coeffs]}
+                events = {game_id:[teams_ids, event_mins, event_hts_ats, stats_dict, city_country, viewers, weath_temp, bet_coeffs]}
                 events_dict.update(events)
 
                 if ((count % 500 == 0) & (count != 0)) | (game_id == game_ids[-1]):
@@ -339,35 +373,37 @@ class HtmlParser:
         return print('Data saved with last id: {}'.format(game_id))
     
     @staticmethod
-    def find_teams_ids(game_ids: list, url='https://soccer365.me/games/', name_saved_file='teams_ids_na_cities'):
+    def find_teams_ids(tm_names: list, url='https://soccer365.me/?a=search&q=', name_saved_file='teams_ids_na_cities'):
         ids_teams = []
         
-        for game_id, count in zip(game_ids, range(len(game_ids))):
+        for tm_name, count in zip(tm_names, range(len(tm_names))):
             try:
-                html = requests.get(url + game_id).content
+                name_wt_space = re.sub(' ', '+', tm_name)
+                html = requests.get(url + name_wt_space).content
                 soup = BeautifulSoup(html, "html.parser")
-
-                div_find = soup.find('div', {'class':'live_game_ht'})
-                id_ht    = ''.join(HtmlParser.cut_part_of_string(str(div_find), '/clubs/', '/">'))
-                team_ht  = ''.join(HtmlParser.cut_part_of_string(str(div_find), '/">', '</a'))               
                 
-                ids_teams.append((id_ht, team_ht))
-                
-                if ((count % 500 == 0) & (count != 0)) | (game_id == game_ids[-1]):  
-                    print('Current_500_teams_ids_saved - {}'.format(game_id))
+                if soup.find_all('span', {'class':'flag16'}):
+                    span_find = [x for x in soup.find_all('span', {'class':'flag16'}) if re.sub('\n', '', x.get_text()) == tm_name]
+                    
+                    if span_find != []:
+                        ids = [''.join(HtmlParser.cut_part_of_string(str(x), '/clubs/', '/"')) for x in span_find][0]               
+                    else:
+                        ids = None
+                    ids_teams.append([tm_name, ids])
+                else:
+                    ids_teams.append([tm_name, None])
+                    
+                if ((count % 1000 == 0) & (count != 0)) | (tm_name == tm_names[-1]):  
+                    print('Current_1000_teams_ids_saved - {}'.format(tm_name))
 
-                    list_ids_teams = open('pickle_files/' + name_saved_file + '_' + game_id, 'wb')
-                    pickle.dump(ids_teams, list_ids_teams)  
-                    list_ids_teams.close()
-                    time.sleep(100) 
+                    file = open('pickle_files/teams_data/' + name_saved_file + '_' + tm_name, 'wb')
+                    pickle.dump(ids_teams, file)  
+                    file.close()
+                    time.sleep(20) 
 
-                time.sleep(1.5)
-                
             except ConnectionError:
-                time.sleep(600)      
-                HtmlParser.find_teams_ids(game_ids[count +1:], name_saved_file=name_saved_file)    
-        
-        return print('Teams ids saved with last id: {}'.format(game_id))
+                time.sleep(100)          
+        return print('Teams ids saved with last name: {}'.format(tm_name))
     
     @staticmethod
     # If data not exist - return save team data beefore
@@ -444,9 +480,60 @@ class HtmlParser:
 
         return all_comps_seasons   
     
+    @staticmethod
+    def find_countries_names(comp_ids: list, url='https://soccer365.me/competitions/', name_saved_file='countries_names'):
+        countries_names_ids = []
 
+        for comp_id, count in zip(comp_ids, range(len(comp_ids))):
+            try:
+                html = requests.get(url + comp_id).content
+                soup = BeautifulSoup(html, "html.parser")
 
+                tab_find = soup.find('table', {'class':'profile_params'})
+                
+                if tab_find:
+                    country_name = ''.join(HtmlParser.cut_part_of_string(str(tab_find.get_text()), 'Country', ' Date'))   
+                else:
+                    country_name = None
+                
+                dict_country = {'comp_id': comp_id, 'country_name': country_name}
 
+                countries_names_ids.append(dict_country)
+
+                if comp_id == comp_ids[-1]:  
+                    print('All_countries_names_saved - {}'.format(comp_id))
+
+                    file = open('pickle_files/' + name_saved_file + '_' + comp_id, 'wb')
+                    pickle.dump(countries_names_ids, file)  
+                    file.close() 
+
+            except ConnectionError:
+                time.sleep(100)       
+
+        return print('All countries names saved with last id: {}'.format(comp_id))
+
+    @staticmethod
+    def cities_data_with_geocoordinates(cities_countries: list, name_saved_file='cities_data_26_05_2022'):
+        cities_data = []
+
+        for city_country, count in zip(cities_countries, range(len(cities_countries))):
+            try:
+                data = geolocator.geocode(city_country[0] +','+ city_country[1])
+                cities_data.append([tuple(city_country), data])     
+                    
+                if ((count % 500 == 0) & (count != 0)) | all(city_country == cities_countries[-1]):  
+                    print('Cities_data_saved - {}'.format(city_country))
+
+                    file = open('pickle_files/cities_countries/' + name_saved_file + '_' + str(city_country[0]) + '_' + str(city_country[1]), 'wb')
+                    pickle.dump(cities_data, file)  
+                    file.close() 
+                
+                time.sleep(2)
+
+            except ConnectionError:
+                time.sleep(300)       
+
+        return print('All cities data saved with last names: {}'.format(city_country))
 
 
 
