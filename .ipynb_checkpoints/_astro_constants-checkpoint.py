@@ -50,10 +50,11 @@ class AstrologicalPoints:
     @staticmethod
     def charts_calculate(df: pd.DataFrame, date:str, utc_time:str, lon:str, lat:str):
 
-        dates = df.apply(lambda x: Datetime(x[date], x[utc_time], '+00:00'), axis=1)
-        posits = df.apply(lambda x: GeoPos(x[lon], x[lat]), axis=1)
+        dates           = df.apply(lambda x: Datetime(x[date], x[utc_time], '+00:00'), axis=1)
+        posits          = df.apply(lambda x: GeoPos(x[lon], x[lat]), axis=1)
         df_dates_posits = pd.concat([dates, posits], axis=1, keys=['dates', 'posits'])
-        charts = df_dates_posits.apply(lambda x: Chart(x['dates'], x['posits'],  hsys=const.HOUSES_PLACIDUS), axis=1)
+        charts          = df_dates_posits.apply(lambda x: [Chart(x['dates'], x['posits'], hsys=const.HOUSES_PLACIDUS), print(x.index)], axis=1) 
+        
         return charts
     
     @staticmethod
@@ -849,8 +850,37 @@ class AspectsPrepare:
                     asp['ssec_ch']  = ssec_ch
        
     @staticmethod
-    
+    def scale_orb_characteristic(list_aspects: list):
+        for asp in list_aspects:
+            if asp['f_point'] == 'Moon':
+                continue
+            if asp['tr_orb'] <= 0.2:
+                asp['orb_char'] = 'max'
+            elif asp['tr_orb'] > 0.2 and asp['tr_orb'] <= 1:
+                asp['orb_char'] = 'mid_max'
+            elif asp['tr_orb'] > 1 and asp['tr_orb'] <= 1.3:
+                asp['orb_char'] = 'middle' 
+            elif asp['tr_orb'] > 1.3 and asp['tr_orb'] <= 2:
+                asp['orb_char'] = 'mid_min' 
+            elif asp['tr_orb'] > 2:
+                asp['orb_char'] = 'min' 
                         
+    @staticmethod
+    def moon_scale_orb_characteristic(list_aspects: list):
+        for asp in list_aspects:
+            if asp['f_point'] != 'Moon':
+                continue
+            if asp['tr_orb'] <= 0.3:
+                asp['orb_char'] = 'max'
+            elif asp['tr_orb'] > 0.3 and asp['tr_orb'] <= 1:
+                asp['orb_char'] = 'mid_max'
+            elif asp['tr_orb'] > 1 and asp['tr_orb'] <= 2.5:
+                asp['orb_char'] = 'middle' 
+            elif asp['tr_orb'] > 2.5 and asp['tr_orb'] <= 4:
+                asp['orb_char'] = 'mid_min' 
+            elif asp['tr_orb'] > 4:
+                asp['orb_char'] = 'min' 
+                
     
 class AspectsClearing:
     

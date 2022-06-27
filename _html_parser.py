@@ -512,7 +512,8 @@ class HtmlParser:
 
         return print('All countries names saved with last id: {}'.format(comp_id))
 
-    @staticmethod
+#    @staticmethod
+    # cities_countries - list of tuples: ('Štip', 'FYR Macedonia')
     def cities_data_with_geocoordinates(cities_countries: list, name_saved_file='cities_data_26_05_2022'):
         cities_data = []
 
@@ -521,7 +522,7 @@ class HtmlParser:
                 data = geolocator.geocode(city_country[0] +','+ city_country[1])
                 cities_data.append([tuple(city_country), data])     
                     
-                if ((count % 500 == 0) & (count != 0)) | all(city_country == cities_countries[-1]):  
+                if ((count % 500 == 0) & (count != 0)) | (city_country == cities_countries[-1]):  
                     print('Cities_data_saved - {}'.format(city_country))
 
                     file = open('pickle_files/cities_countries/' + name_saved_file + '_' + str(city_country[0]) + '_' + str(city_country[1]), 'wb')

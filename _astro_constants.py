@@ -50,10 +50,11 @@ class AstrologicalPoints:
     @staticmethod
     def charts_calculate(df: pd.DataFrame, date:str, utc_time:str, lon:str, lat:str):
 
-        dates = df.apply(lambda x: Datetime(x[date], x[utc_time], '+00:00'), axis=1)
-        posits = df.apply(lambda x: GeoPos(x[lon], x[lat]), axis=1)
+        dates           = df.apply(lambda x: Datetime(x[date], x[utc_time], '+00:00'), axis=1)
+        posits          = df.apply(lambda x: GeoPos(x[lon], x[lat]), axis=1)
         df_dates_posits = pd.concat([dates, posits], axis=1, keys=['dates', 'posits'])
-        charts = df_dates_posits.apply(lambda x: Chart(x['dates'], x['posits'],  hsys=const.HOUSES_PLACIDUS), axis=1)
+        charts          = df_dates_posits.apply(lambda x: [Chart(x['dates'], x['posits'], hsys=const.HOUSES_PLACIDUS), print(x.index)], axis=1) 
+        
         return charts
     
     @staticmethod
