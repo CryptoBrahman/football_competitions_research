@@ -51,7 +51,7 @@ class ParsingDataPrepare:
     @staticmethod
     # Lat - lon format for  aspects: 'lon':'38n32', '14s42'], 'lat':'8w54', '18e14'.
     # df with 'latitude' and 'longitude' columns
-    def lat_lon_calculate(df: pd.DataFrame):
+    def lat_lon_calculate(df: pd.DataFrame, col_lat: str, col_lon: str):
         all_lat, all_lon = [], []
 
         df.reset_index(drop=True, inplace=True)
@@ -59,7 +59,7 @@ class ParsingDataPrepare:
         df.longitude = pd.to_numeric(df.longitude)
 
         for ind in range(df.shape[0]):
-            lat_lon = LatLon(Latitude(df.latitude[ind]), Longitude(df.longitude[ind]))
+            lat_lon = LatLon(Latitude(df[col_lat][ind]), Longitude(df[col_lon][ind]))
             cords = lat_lon.to_string('d%%H%m%')
             lower_cords = [x.lower() for x in cords]
 
@@ -282,95 +282,95 @@ class HtmlParser:
         
         return print('Data is saved')
     
-    @staticmethod
-    # event_hts and event_ats - left-right position on site's page
-    def find_game_events(game_ids: list, url='https://soccer365.me/games/', name_saved_file='events_games'):
-        events_dict = {}
-        for game_id, count in zip(game_ids, range(len(game_ids))):
-            try:
-                html = requests.get(url + game_id).content
-                soup = BeautifulSoup(html, "html.parser")
+#     @staticmethod
+#     # event_hts and event_ats - left-right position on site's page
+#     def find_game_events(game_ids: list, url='https://soccer365.me/games/', name_saved_file='events_games'):
+#         events_dict = {}
+#         for game_id, count in zip(game_ids, range(len(game_ids))):
+#             try:
+#                 html = requests.get(url + game_id).content
+#                 soup = BeautifulSoup(html, "html.parser")
 
-                event_mins = [x.get_text() for x in soup.find_all('div', {'class':'event_min'})]
-                event_mins = [HtmlParser.cut_part_of_string(str(x), '^', '\'') for x in event_mins]
-                event_mins = [''.join(x) if x != [] else '+' for x in event_mins]
+#                 event_mins = [x.get_text() for x in soup.find_all('div', {'class':'event_min'})]
+#                 event_mins = [HtmlParser.cut_part_of_string(str(x), '^', '\'') for x in event_mins]
+#                 event_mins = [''.join(x) if x != [] else '+' for x in event_mins]
+            
+#                 event_hts = [x.find_all('div') for x in soup.find_all('div', {'class':'event_ht'})]
+#                 event_hts = [HtmlParser.cut_part_of_string(str(x), 'icon live_', '\">') for x in event_hts]
+#                 event_ats = [x.find('div') for x in soup.find_all('div', {'class':'event_at'})]
+#                 event_ats = [HtmlParser.cut_part_of_string(str(x), 'icon live_', '\">') for x in event_ats]
 
-                event_hts = [x.find_all('div') for x in soup.find_all('div', {'class':'event_ht'})]
-                event_hts = [HtmlParser.cut_part_of_string(str(x), 'icon live_', '\">') for x in event_hts]
-                event_ats = [x.find('div') for x in soup.find_all('div', {'class':'event_at'})]
-                event_ats = [HtmlParser.cut_part_of_string(str(x), 'icon live_', '\">') for x in event_ats]
-
-                event_hts_ats = [y if x == [] else x for x, y in zip(event_hts, event_ats)]
-                event_hts_ats = [''.join(x) for x in event_hts_ats]
+#                 event_hts_ats = [y if x == [] else x for x, y in zip(event_hts, event_ats)]
+#                 event_hts_ats = [''.join(x) for x in event_hts_ats]
                 
-                team_id_hts = soup.find('div', {'class':'live_game_ht'})
-                team_id_hts = ''.join(HtmlParser.cut_part_of_string(str(team_id_hts), '/clubs/', '/\">'))
-                team_id_ats = soup.find('div', {'class':'live_game_at'})
-                team_id_ats = ''.join(HtmlParser.cut_part_of_string(str(team_id_ats), '/clubs/', '/\">'))
+#                 team_id_hts = soup.find('div', {'class':'live_game_ht'})
+#                 team_id_hts = ''.join(HtmlParser.cut_part_of_string(str(team_id_hts), '/clubs/', '/\">'))
+#                 team_id_ats = soup.find('div', {'class':'live_game_at'})
+#                 team_id_ats = ''.join(HtmlParser.cut_part_of_string(str(team_id_ats), '/clubs/', '/\">'))
                 
-                teams_ids  = team_id_hts + ' - ' + team_id_ats
+#                 teams_ids  = team_id_hts + ' - ' + team_id_ats
                 
-                stats_items = soup.find_all("div", {"class": "stats_item"})
-                stats_dict = []
+#                 stats_items = soup.find_all("div", {"class": "stats_item"})
+#                 stats_dict = []
                 
-                for stats_item in stats_items:
-                    stats_title = stats_item.find("div", {"class": "stats_title"}).text
-                    stats_inf_1 = stats_item.find_all("div", {"class": "stats_inf"})[0].text
-                    stats_inf_2 = stats_item.find_all("div", {"class": "stats_inf"})[1].text
-                    stats_list  = stats_title, stats_inf_1, stats_inf_2
-                    stats_dict.append(stats_list)
+#                 for stats_item in stats_items:
+#                     stats_title = stats_item.find("div", {"class": "stats_title"}).text
+#                     stats_inf_1 = stats_item.find_all("div", {"class": "stats_inf"})[0].text
+#                     stats_inf_2 = stats_item.find_all("div", {"class": "stats_inf"})[1].text
+#                     stats_list  = stats_title, stats_inf_1, stats_inf_2
+#                     stats_dict.append(stats_list)
 
-                try:
-                    preview_items = soup.find_all('div', {'class':'preview_item'})
-                    city_country  = preview_items[0].find_all('span', {'class':'min_gray'})[0].text
-                except (AttributeError, IndexError):   
-                    preview_items = city_country = ''
+#                 try:
+#                     preview_items = soup.find_all('div', {'class':'preview_item'})
+#                     city_country  = preview_items[0].find_all('span', {'class':'min_gray'})[0].text
+#                 except (AttributeError, IndexError):   
+#                     preview_items = city_country = ''
 
-                try:
-                    prview_weath_tmp = preview_items[0].find('span', {'class':'prview_weath_tmp'}).text
-                    weather          = HtmlParser.cut_part_of_string(prview_weath_tmp, '^', '°')
-                    temp             = HtmlParser.cut_part_of_string(prview_weath_tmp, '\xa0\xa0', '$')
-                    weath_temp       = ''.join(weather), ''.join(temp)
-                except (AttributeError, IndexError):
-                    prview_weath_tmp = weath_temp = ''
+#                 try:
+#                     prview_weath_tmp = preview_items[0].find('span', {'class':'prview_weath_tmp'}).text
+#                     weather          = HtmlParser.cut_part_of_string(prview_weath_tmp, '^', '°')
+#                     temp             = HtmlParser.cut_part_of_string(prview_weath_tmp, '\xa0\xa0', '$')
+#                     weath_temp       = ''.join(weather), ''.join(temp)
+#                 except (AttributeError, IndexError):
+#                     prview_weath_tmp = weath_temp = ''
 
-                try:
-                    viewers = HtmlParser.cut_part_of_string(preview_items[1].text, ':', '$')
-                    viewers = ''.join(viewers)
-                except (AttributeError, IndexError):
-                    viewers = ''
+#                 try:
+#                     viewers = HtmlParser.cut_part_of_string(preview_items[1].text, ':', '$')
+#                     viewers = ''.join(viewers)
+#                 except (AttributeError, IndexError):
+#                     viewers = ''
 
-                time.sleep(1.5)
-                url_for_bets = url.replace('.me/', '.ru/')
-                bets_html    = requests.get(url_for_bets + game_id).content
-                bets_soup    = BeautifulSoup(bets_html, "html.parser")
+#                 time.sleep(1.5)
+#                 url_for_bets = url.replace('.me/', '.ru/')
+#                 bets_html    = requests.get(url_for_bets + game_id).content
+#                 bets_soup    = BeautifulSoup(bets_html, "html.parser")
 
-                bet_titeles  = [x.get_text() for x in bets_soup.find_all('div', {'class':'odds_coeff_title'})]
+#                 bet_titeles  = [x.get_text() for x in bets_soup.find_all('div', {'class':'odds_coeff_title'})]
 
-                try:
-                    coeffs = [x.get_text() for x in bets_soup.find_all('div', {'class':'odds_coeff'})[:len(bet_titeles)]]
-                except (AttributeError, IndexError):
-                    coeffs = ''
+#                 try:
+#                     coeffs = [x.get_text() for x in bets_soup.find_all('div', {'class':'odds_coeff'})[:len(bet_titeles)]]
+#                 except (AttributeError, IndexError):
+#                     coeffs = ''
 
-                bet_coeffs = bet_titeles, coeffs
+#                 bet_coeffs = bet_titeles, coeffs
 
-                events = {game_id:[teams_ids, event_mins, event_hts_ats, stats_dict, city_country, viewers, weath_temp, bet_coeffs]}
-                events_dict.update(events)
+#                 events = {game_id:[teams_ids, event_mins, event_hts_ats, stats_dict, city_country, viewers, weath_temp, bet_coeffs]}
+#                 events_dict.update(events)
 
-                if ((count % 500 == 0) & (count != 0)) | (game_id == game_ids[-1]):
-                    print('Current_500_games_events_saved - {}'.format(game_id))
+#                 if ((count % 500 == 0) & (count != 0)) | (game_id == game_ids[-1]):
+#                     print('Current_500_games_events_saved - {}'.format(game_id))
 
-                    events_games = open('pickle_files/' + name_saved_file + '_' + game_id, 'wb')
-                    pickle.dump(events_dict, events_games)  
-                    events_games.close()
-                    time.sleep(600) 
+#                     events_games = open('pickle_files/' + name_saved_file + '_' + game_id, 'wb')
+#                     pickle.dump(events_dict, events_games)  
+#                     events_games.close()
+#                     time.sleep(6) # time.sleep(600)
 
-                time.sleep(1.5)    
-            except ConnectionError:
-                time.sleep(600) 
-                HtmlParser.find_game_events(game_ids[count +1:], name_saved_file=name_saved_file)
+#                 time.sleep(1.5)    
+#             except ConnectionError:
+#                 time.sleep(600)  
+#                 HtmlParser.find_game_events(game_ids[count +1:], name_saved_file=name_saved_file)
 
-        return print('Data saved with last id: {}'.format(game_id))
+#         return print('Data saved with last id: {}'.format(game_id))
     
     @staticmethod
     def find_teams_ids(tm_names: list, url='https://soccer365.me/?a=search&q=', name_saved_file='teams_ids_na_cities'):

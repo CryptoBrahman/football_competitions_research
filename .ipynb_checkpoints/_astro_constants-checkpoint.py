@@ -48,13 +48,15 @@ class AstrologicalConstants:
 class AstrologicalPoints:
     
     @staticmethod
-    def charts_calculate(df: pd.DataFrame, date:str, utc_time:str, lon:str, lat:str):
-
+    def dates_posits_calculate(df: pd.DataFrame, date:str, utc_time:str, lat:str, lon:str):
         dates           = df.apply(lambda x: Datetime(x[date], x[utc_time], '+00:00'), axis=1)
-        posits          = df.apply(lambda x: GeoPos(x[lon], x[lat]), axis=1)
+        posits          = df.apply(lambda x: GeoPos(x[lat], x[lon]), axis=1)
         df_dates_posits = pd.concat([dates, posits], axis=1, keys=['dates', 'posits'])
-        charts          = df_dates_posits.apply(lambda x: [Chart(x['dates'], x['posits'], hsys=const.HOUSES_PLACIDUS), print(x.index)], axis=1) 
-        
+        return df_dates_posits
+    
+    @staticmethod
+    def charts_calculate(df_dates_posits: pd.DataFrame):
+        charts = df_dates_posits.apply(lambda x: Chart(x['dates'], x['posits'], hsys=const.HOUSES_PLACIDUS), axis=1) 
         return charts
     
     @staticmethod
@@ -1031,7 +1033,78 @@ class AspectsClearing:
                         list_aspects.remove(n_asp)
     
     
+class AspectsCalculate:
     
+    def aspects_calculate(df: pd.DataFrame, row_number: int):
+        objects = ObjectsPrepare(df.iloc[row_number]).conbine_class_methods()
+        tuple_list = df.transform_id[row_number]
+
+        all_aspects = []
+
+        houses_remove_objs = []
+        moon_remove_objs   = ['Asc', 'Desc', 'MC', 'IC', 'Uranus', 'Neptune', 'Pluto', 'Chiron', 'North Node', 'South Node', 'Antes Moon','Antes Uranus', 
+                              'Antes Neptune', 'Antes Pluto', 'Antes Chiron']
+        main_remove_objs   = ['Asc', 'Desc', 'MC', 'IC', 'Moon', 'Antes Moon']
+        houses_aspect_degs = {'Con': 0}
+        main_aspect_degs   = {'Con': 0, 'Opp': 180}
+        moon_aspect_degs   = AstrologicalConstants.aspekts_degrees
+        house_ids          = AstrologicalConstants.houses
+
+        house_objs, moon_objs, main_objs = objects.copy(),objects.copy(), objects.copy() 
+
+        moon_asp_after  = AspectsPrepare.object_aspects('Moon', moon_objs, moon_remove_objs, moon_aspect_degs)
+        moon_asp_before = AspectsPrepare.object_aspects('Moon', moon_objs, moon_remove_objs, moon_aspect_degs, before_point_asp='yes', before_orb=1)
+        all_aspects.append(moon_asp_after)
+        all_aspects.append(moon_asp_before)
+
+        for h_obj in house_ids:
+            house_asp_after  = AspectsPrepare.object_aspects(h_obj, house_objs, houses_remove_objs, houses_aspect_degs, before_point_asp='no', after_orb=3)
+            house_asp_before = AspectsPrepare.object_aspects(h_obj, house_objs, houses_remove_objs, houses_aspect_degs, before_point_asp='yes', before_orb=3)
+            all_aspects.append(house_asp_after)
+            all_aspects.append(house_asp_before)
+
+        for m_obj in objects:
+            main_asp_after  = AspectsPrepare.object_aspects(m_obj.id, main_objs, main_remove_objs, main_aspect_degs, before_point_asp='no', after_orb=3)
+            main_asp_before = AspectsPrepare.object_aspects(m_obj.id, main_objs, main_remove_objs, main_aspect_degs, before_point_asp='yes', before_orb=3)
+            all_aspects.append(main_asp_after)
+            all_aspects.append(main_asp_before)
+
+        for asp in all_aspects:
+            if asp != None and any(var['f_point'] == 'Asc' and var['s_point'] == 'Pluto' for var in asp):
+                asc_pluto = asp
+            else:  
+                asc_pluto = []
+
+        if asc_pluto == []:
+            for obj in objects:
+                if obj.id == 'Asc' or obj.id == 'Pluto':
+                    asc_pluto.append(obj) 
+
+            asc_pluto_asp_after = AspectsPrepare.object_aspects('Asc', asc_pluto, houses_remove_objs, houses_aspect_degs, before_point_asp='no', after_orb=20)
+            all_aspects.append(asc_pluto_asp_after)
+
+        all_aspects_full = AspectsPrepare.transform_dict_list_type(all_aspects)
+
+        AspectsClearing.remove_duplicate_aspects(all_aspects_full)
+        AspectsClearing.remove_antes_unimportant_aspects(all_aspects_full)
+        AspectsClearing.remove_node_opposition(all_aspects_full)
+        AspectsClearing.remove_antes_with_own_nat_point_aspects(all_aspects_full)
+        AspectsClearing.remove_mirror_antes_aspects(all_aspects_full, tuple_list)
+        AspectsClearing.remove_mirror_houses_antes_conuction(all_aspects_full)
+
+        for asp in all_aspects_full:
+            asp['den_point'] = []
+
+        AspectsPrepare.supplement_houses_and_parts_rulers_aspects(objects, all_aspects_full, tuple_list)
+        AspectsPrepare.supplement_conv_stat_aspects(objects, all_aspects_full)
+        AspectsPrepare.supplement_moon_complete_denide_weak_aspects(objects, all_aspects_full, tuple_list)
+        AspectsPrepare.scale_orb_characteristic(all_aspects_full)
+        AspectsPrepare.moon_scale_orb_characteristic(all_aspects_full)
+        AspectsPrepare.aspects_rulers_characteristic(tuple_list, all_aspects_full)
+
+        AspectsClearing.remove_houses_one_nodes_conuction(all_aspects_full)  
+
+        return [all_aspects_full]
     
     
     

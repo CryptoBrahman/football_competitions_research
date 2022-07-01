@@ -27,25 +27,23 @@ c) how pycharm add own modules:
 5) Research new and old data: - games_statistic.ipynb 
 
 .)
-games_api_parser.ipynb           - data parsing by days from 'soccer365.me/ru' cite and create df, find games events with bets coefficients and create: 
-                                   df['event_mins', 'event_hts_ats', 'stats_dict', 'city_country', 'viewers', 'weath_temp', 'bets']  
+games_api_parser.ipynb           - data parsing by days from 'soccer365.me/ru' cite and create df 
+                          
 .)
 parsing_competition_tables.ipynb - parsed statistic tables with country's competitions by years from cite 'soccer365.me/ru'.
                                    create df['team_name','pos','pld','w','d','l','gf','ga','+/-','pts','comp_id','season_id'] 
                                    and parsing countries names by ids.
 .)
-concatinate_data.ipynb.ipynb - concatinate all dataframes with games, events, season results tables and cities statistic.
+concatinate_data_fav_pre.ipynb -   concatinate all dataframes with games, events, season results tables and cities statistic.
                                    create df_top_ligues: 74706 rows, df_second_ligues: 125237 rows, from 'pickle_files/all_matches': 
                                    df['game_id', 'ligue_header', 'comp_id', 'season_id', 'game_utc', 'game_title','goals', 'game_status'].
 .)
-games_statistic.ipynb            - concatenate some files from df: 'all_matches' with df: 'events'.
-.)
 parsing_teams_data.ipynb          - script for teams ids parsing and geting info 'city', 'country' and work after manual correcting.
 .)
-geolocation_data.ipynb           - create 'df_world_cities' with lat, lon cordinate and geopy.geocoders library.
-                                   df['country','city','latitude','longitude','lat','lon']
+geolocation_data.ipynb            - create 'df_world_cities' with lat, lon cordinate and geopy.geocoders library.
+                                    df['country','city','latitude','longitude','lat','lon']
 .) 
-astroaspects.ipynb               - for getting games aspects submit: df[game_id', 'time', 'lon', 'long'] columns.
+astroaspects.ipynb                - for getting games aspects submit: df[game_id', 'time', 'lon', 'long'] columns.
 
   
 .)
