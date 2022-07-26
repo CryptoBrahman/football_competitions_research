@@ -513,7 +513,7 @@ class HtmlParser:
 
         return print('All countries names saved with last id: {}'.format(comp_id))
 
-#    @staticmethod
+    @staticmethod
     # cities_countries - list of tuples: ('Štip', 'FYR Macedonia')
     def cities_data_with_geocoordinates(cities_countries: list, name_saved_file='cities_data_26_05_2022'):
         cities_data = []
@@ -522,16 +522,16 @@ class HtmlParser:
             try:
                 data = geolocator.geocode(city_country[0] + ',' + city_country[1])
                 # time.sleep(2)
-                cities_data.append([tuple(city_country), data])     
-                    
-                if ((count % 100 == 0) & (count != 0)) | (city_country == cities_countries[-1]):  
+                cities_data.append([tuple(city_country), data])
+
+                if ((count % 100 == 0) & (count != 0)) | (city_country == cities_countries[-1]):
                     print('Cities_data_saved 100 - {}'.format(city_country))
 
                     file = open('pickle_files/cities_countries/' + name_saved_file + '_' + str(city_country[0]) + '_' + str(city_country[1]), 'wb')
-                    pickle.dump(cities_data, file)  
-                    file.close() 
+                    pickle.dump(cities_data, file)
+                    file.close()
             except ConnectionError:
-                time.sleep(3)       
+                time.sleep(3)
         return print('All cities data saved with last names: {}'.format(city_country))
 
 
