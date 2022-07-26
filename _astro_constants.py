@@ -2,7 +2,7 @@ import sys
 sys.path.append('/home/cryptobrahman/Own/football_competitions_research/own_modules/') 
 
 import pandas as pd
-from itertools import combinations
+import pylunar
 from numpy import arange, isclose
 from copy import deepcopy
 
@@ -44,7 +44,35 @@ class AstrologicalConstants:
 
     parts               = ['Pars Fortuna', 'Antes Pars Fortuna', 'Pars Spirit', 'Pars Glory', 'Pars Crest', 'Pars Rock']
 
-    
+
+class MoonDaysCalculate:
+    ''' Example lat - lon, datetime Y,M,D H,m,0
+    mi = pylunar.MoonInfo((42, 21, 0), (-71, 3, 0))
+    mi.update((2016, 8, 4, 1, 45, 0))
+    int(mi.age()) '''
+
+    @staticmethod
+    def geocoords_transform(df: pd.DataFrame, col_coords: str):
+        tr_num = df[col_coords].map(lambda x: (int(str(x).split('.')[0]), int(divmod(abs(x), 1)[1] * 0.6 * 100), 0))
+        return tr_num
+
+    @staticmethod
+    def date_time_transform(df: pd.DataFrame, col_coords: str):
+        date_splt = df[col_coords].map(lambda x: (pd.to_numeric(x[:10].split('.')[2]),
+                                                  pd.to_numeric(x[:10].split('.')[1]),
+                                                  pd.to_numeric(x[:10].split('.')[0]),
+                                                  pd.to_numeric(x[11:16].split(':')[0]),
+                                                  pd.to_numeric(x[11:16].split(':')[1]), 0))
+        return date_splt
+
+    @staticmethod
+    # Tuple lat example: (42, 21, 0), date_time: (2016, 8, 4, 1, 45, 0)
+    def moon_day_calculate(lat: tuple, lon: tuple, date_time: tuple):
+        mi = pylunar.MoonInfo(lat, lon)
+        mi.update(date_time)
+        return int(mi.age())
+
+
 class AstrologicalPoints:
     
     @staticmethod
@@ -73,7 +101,7 @@ class AstrologicalPoints:
         return rulers_col_names
     
     @staticmethod
-    def ruler_of_object(col_object: pd.Series):
+    def ruler_of_object(col_object: pd.Series): 
         rulers_name = col_object.map(lambda x: essential.ruler(getattr(x, 'sign')))
         return rulers_name
     
@@ -357,8 +385,7 @@ class AspectsPrepare:
                 orb_con = AspectsPrepare.orb_calculate(include_lon, obj_lon, deg)
                 return orb_con
                 
-
-    @staticmethod         
+    @staticmethod
     def object_data(objects: list, name: str):
         for obj in objects:
             if obj.id == name:
@@ -550,9 +577,9 @@ class AspectsPrepare:
                     for val in values[1]:
                         if asp['f_point'] == val or asp['s_point'] == val: 
                             rulers_aspects.append(asp)
-                            ind = values[1].index(val)
-                            asp['charact'] = values[0][ind]
-                            asp['all_characts'] = values[0]
+                            # ind = values[1].index(val)
+                            # asp['charact'] = values[0][ind]
+                            # asp['all_characts'] = values[0]
 
         return rulers_aspects 
     
@@ -888,13 +915,29 @@ class AspectsClearing:
     
     @staticmethod
     def remove_duplicate_aspects(list_dicts: list):
-        list_dicts_cp = list_dicts.copy()
+        for val in list_dicts:
+            if list_dicts.count(val) > 1:
+                list_dicts.remove(val)
 
+    @staticmethod
+    # Save aspect with 'bp_asp':'no'
+    def remove_equal_asp_besides_bp_asp(list_dicts: list):
+        fs_points = [[val['f_point'], val['s_point']] for val in list_dicts]
+        del_vals = []
+        for i, point in enumerate(fs_points):
+            if fs_points.count(point) > 1 and list_dicts[i]['bp_asp'] == 'yes':
+                del_vals.append(list_dicts[i])
+        for x in del_vals:
+            list_dicts.remove(x)
+
+    @staticmethod
+    def remove_mirror_aspects(list_dicts: list):
+        list_dicts_cp = list_dicts.copy()
         for val in list_dicts:
             for val_cp in list_dicts_cp:
                 if val['f_point'] == val_cp['s_point'] and val_cp['f_point'] == val['s_point']:
-                    list_dicts.remove(val_cp)                                                  
-    
+                    list_dicts.remove(val_cp)
+
     @staticmethod
     # Only for natural points in list.
     def create_possibly_antes_aspects(list_points: list):
@@ -1080,12 +1123,16 @@ class AspectsCalculate:
                 if obj.id == 'Asc' or obj.id == 'Pluto':
                     asc_pluto.append(obj) 
 
-            asc_pluto_asp_after = AspectsPrepare.object_aspects('Asc', asc_pluto, houses_remove_objs, houses_aspect_degs, before_point_asp='no', after_orb=20)
+            asc_pluto_asp_after  = AspectsPrepare.object_aspects('Asc', asc_pluto, houses_remove_objs, houses_aspect_degs, before_point_asp='no', after_orb=10)
+            asc_pluto_asp_before = AspectsPrepare.object_aspects('Asc', asc_pluto, houses_remove_objs, houses_aspect_degs, before_point_asp='yes', before_orb=10)
             all_aspects.append(asc_pluto_asp_after)
+            all_aspects.append(asc_pluto_asp_before)
 
         all_aspects_full = AspectsPrepare.transform_dict_list_type(all_aspects)
 
         AspectsClearing.remove_duplicate_aspects(all_aspects_full)
+        AspectsClearing.remove_equal_asp_besides_bp_asp(all_aspects_full)
+        AspectsClearing.remove_mirror_aspects(all_aspects_full)
         AspectsClearing.remove_antes_unimportant_aspects(all_aspects_full)
         AspectsClearing.remove_node_opposition(all_aspects_full)
         AspectsClearing.remove_antes_with_own_nat_point_aspects(all_aspects_full)
@@ -1104,8 +1151,4 @@ class AspectsCalculate:
 
         AspectsClearing.remove_houses_one_nodes_conuction(all_aspects_full)  
 
-        return [all_aspects_full]
-    
-    
-    
-    
+        return all_aspects_full

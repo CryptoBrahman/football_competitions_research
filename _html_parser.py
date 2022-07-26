@@ -5,6 +5,7 @@ sys.path.append('/mnt/KINGSTON_120/Own/football_competitions_research/own_module
 import re
 import pickle
 import time
+import operator
 import requests
 import datetime
 import unicodedata
@@ -147,34 +148,38 @@ class ParsingDataPrepare:
         b = datetime.datetime.strptime(end_date, date_format)
         delta = b - a
         numdays = abs(delta.days)
-
         return numdays
  
     @staticmethod
     def get_minvalue_ind(inputlist: list):
         min_value = min(inputlist) 
-        min_index=inputlist.index(min_value)
-
+        min_index = inputlist.index(min_value)
         return min_index
 
     @staticmethod
-    # For 'bets' and 'pos' coefs use 'min' method, for 'pts' - 'max' method.
+    # For 'bets' and 'pos' coeffs use 'min_point' method, for 'pts' - 'max_point', 'sum_point' methods.
     def roles_determinate(inputlist, power_coef: float, method: str):
-        if method != 'min' and method != 'max':
-            print("Unsuported value in sinlge('min','max')")
-
+        if method != 'min_point' and method != 'max_point' and method != 'sum_point':
+            print("Unsupported value in single('min_point','max_point', 'sum_point')")
         if None in inputlist:
             return None
 
-        if method == 'min':
-            roles_dict = {0:'Fav', 1:'Pre'}   
-        if method == 'max':
-            roles_dict = {0:'Pre', 1:'Fav'}
+        if method == 'min_point':
+            math_oper = operator.mul
+            roles_dict = {0: 'Fav', 1: 'Pre'}
+        if method == 'max_point':
+            math_oper = operator.mul
+            roles_dict = {0: 'Pre', 1: 'Fav'}
+        if method == 'sum_point':
+            math_oper = operator.add
+            roles_dict = {0: 'Pre', 1: 'Fav'}
 
-        if power_coef * inputlist[ParsingDataPrepare.get_minvalue_ind(inputlist)] < inputlist[~ParsingDataPrepare.get_minvalue_ind(inputlist)]:
-                return roles_dict[ParsingDataPrepare.get_minvalue_ind(inputlist)]
-        else: 
+        if math_oper(power_coef, inputlist[ParsingDataPrepare.get_minvalue_ind(inputlist)]) \
+                <= inputlist[~ParsingDataPrepare.get_minvalue_ind(inputlist)]:
+            return roles_dict[ParsingDataPrepare.get_minvalue_ind(inputlist)]
+        else:
             return 'Neu'
+
 
 class HtmlParser:
     
@@ -406,21 +411,18 @@ class HtmlParser:
         return print('Teams ids saved with last name: {}'.format(tm_name))
     
     @staticmethod
-    # If data not exist - return save team data beefore
+    # If data not exist - return save teams data beefore
     def find_teams_data(teams_ids: list, url='https://soccer365.me/clubs/', name_saved_file='teams_wiki_data'):
         teams_data = []
-        
         for teams_id, count in zip(teams_ids, range(len(teams_ids))):
             try:
                 html = requests.get(url + teams_id).content
                 soup = BeautifulSoup(html, "html.parser")
 
                 div_find = soup.find('div', {'class':'profile_wiki'})   
-                cut_str   = ''.join(HtmlParser.cut_part_of_string(str(div_find), '_wiki">', '\xa0<a class='))
+                cut_str  = ''.join(HtmlParser.cut_part_of_string(str(div_find), '_wiki">', '\xa0<a class='))
                 
                 teams_data.append((teams_id, cut_str))
-                
-                
                 if ((count % 500 == 0) & (count != 0)) | (teams_id == teams_ids[-1]):
                     print('Current_500_teams_data_saved - {}'.format(teams_id))
 
@@ -432,9 +434,8 @@ class HtmlParser:
                 time.sleep(1.5)
                 
             except ConnectionError:
-                time.sleep(600)      
-                HtmlParser.find_teams_data(teams_ids[count +1:], name_saved_file=name_saved_file)    
-        
+                time.sleep(30)
+                HtmlParser.find_teams_data(teams_ids[count +1:], name_saved_file = name_saved_file)
         return print('Teams data saved with last id: {}'.format(teams_id))
     
     @staticmethod
@@ -519,21 +520,18 @@ class HtmlParser:
 
         for city_country, count in zip(cities_countries, range(len(cities_countries))):
             try:
-                data = geolocator.geocode(city_country[0] +','+ city_country[1])
+                data = geolocator.geocode(city_country[0] + ',' + city_country[1])
+                # time.sleep(2)
                 cities_data.append([tuple(city_country), data])     
                     
-                if ((count % 500 == 0) & (count != 0)) | (city_country == cities_countries[-1]):  
-                    print('Cities_data_saved - {}'.format(city_country))
+                if ((count % 100 == 0) & (count != 0)) | (city_country == cities_countries[-1]):  
+                    print('Cities_data_saved 100 - {}'.format(city_country))
 
                     file = open('pickle_files/cities_countries/' + name_saved_file + '_' + str(city_country[0]) + '_' + str(city_country[1]), 'wb')
                     pickle.dump(cities_data, file)  
                     file.close() 
-                
-                time.sleep(2)
-
             except ConnectionError:
-                time.sleep(300)       
-
+                time.sleep(3)       
         return print('All cities data saved with last names: {}'.format(city_country))
 
 

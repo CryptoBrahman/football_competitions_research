@@ -8,23 +8,23 @@ c) how pycharm add own modules:
     If your own module is in the same path, you need mark the path as Sources Root. In the project explorer, 
     right-click on the directory that you want import. Then select Mark Directory As and select Sources Root.
 
-# Create all country's competitions tables file from parsing_competition_tables.ipynb  --------
 # Create new columns for each object, five clasess for favorite's advantsge and orbs's approuch  -----++++++
 # Will change aspect's values from least to lagest and vice versa (1 - 5, 5 - 1) for ml alrorithm. ----------
 # Find decision for rulers the opposite by values: ('ruler_asc'-'ruler_ic), ('ruler_dsc'-'ruler_mc) - for one planet. --------
 # Change 'moon_conv_denide' aspect on 'moon_conv_compl' or 'moon_conv_compl_weak' for matches with time duration more than 100 min. -------
 # Create 'all_asps', 'main_asps' and ' addition_asps' - columns. -------
-# Create features for favorit and pretendent -------
-# Calculate Asc with Pluto connection to the second house's cuspid --------
-
 
 
 1) Get list games by date and parsing every event for game by leagues, create two dataframes 'df_games' and 'df_events': - games_api_parser.ipynb 
-2) Create 'df_comp_tabs_topsec_lgs' on during date for every top and secomdary league with team's statistic: - parsing_competition_tables.ipynb
-3) Combine all data with geolocation at one dataframe for each time parsing and unite all time data parsing in general dataframe: -     concatinate_all_data.ipynb.ipynb
-4) Add new team data (city, country) in 'df_teams_data': - teams_data.ipynb
-4) Calculate astrological aspects for each game: - astroaspects.ipynb
-5) Research new and old data: - games_statistic.ipynb 
+2) Create 'df_comp_tabs_lgs' on during date for every league with team's statistic: - parsing_competition_tables.ipynb
+3) Combine game, countries and teams cities at one dataframe, find teams without cities and add new data after manual fix: -concatinate_all_data.ipynb
+4) Parsing new teams data(city, country) from soccer365: - parsing_teams_data.ipynb
+5) Manual fixing new team data in csv file: - parsing_teams_data.ipynb
+6) Add new team data(city, country) in 'df_teams_data : - teams_data.ipynb
+7) Return in -concatinate_all_data.ipynb and add new team data
+8) Parsing geolocation data with geocords, manual fix errors in cities, countries names and teams data. Add new unique citie's in coords df : -geolocation_data.ipynb
+9) Calculate astrological aspects for each game: - astroaspects.ipynb
+10) Research new and old data: - games_statistic.ipynb 
 
 .)
 games_api_parser.ipynb           - data parsing by days from 'soccer365.me/ru' cite and create df 
@@ -55,7 +55,8 @@ html_parser.py                   - class methods for site parsing.
 .)
 teams_data.ipynb                 - create dataframe: df_teams_data['teams', 'countries', 'cities'] columns and add following data.
                                    1918 - rows and change different no 'utf-8' symbols.
-
+.)
+statistic_research.ipynb         - file for aspect's statistic research
 
 .)
 old_files/astrological_data.ipynb - code examples from flatlib library.

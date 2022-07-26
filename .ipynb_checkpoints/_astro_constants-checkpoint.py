@@ -73,7 +73,7 @@ class AstrologicalPoints:
         return rulers_col_names
     
     @staticmethod
-    def ruler_of_object(col_object: pd.Series):
+    def ruler_of_object(col_object: pd.Series): 
         rulers_name = col_object.map(lambda x: essential.ruler(getattr(x, 'sign')))
         return rulers_name
     
@@ -168,7 +168,7 @@ class ObjectsPrepare:
     
     def cols(self):
         self.list_objs = []
-        for obj in self.sr: 
+        for obj in self.sr:
             if hasattr(obj, 'lon'):
                 self.list_objs.append(obj)
         return self.list_objs
@@ -185,11 +185,11 @@ class ObjectsPrepare:
     def zeroing_some_longspeed(self):
         all_objects = []
         for obj in self.unique_objs:
-            if hasattr(obj,'lonspeed') and obj.meanMotion() == 0:
+            if hasattr(obj, 'lonspeed') and obj.meanMotion() == 0:
                 obj.lonspeed = 0
             all_objects.append(obj)
-        self.unique_objs =  all_objects  
-        return  self.unique_objs
+        self.unique_objs = all_objects
+        return self.unique_objs
     
     def conbine_class_methods(self):
         self.cols()
@@ -889,12 +889,14 @@ class AspectsClearing:
     @staticmethod
     def remove_duplicate_aspects(list_dicts: list):
         list_dicts_cp = list_dicts.copy()
-
+        
         for val in list_dicts:
             for val_cp in list_dicts_cp:
                 if val['f_point'] == val_cp['s_point'] and val_cp['f_point'] == val['s_point']:
-                    list_dicts.remove(val_cp)                                                  
-    
+                    list_dicts.remove(val_cp)  
+                else:
+                    continue
+
     @staticmethod
     # Only for natural points in list.
     def create_possibly_antes_aspects(list_points: list):

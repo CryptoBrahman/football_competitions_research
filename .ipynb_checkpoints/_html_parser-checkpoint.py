@@ -522,7 +522,7 @@ class HtmlParser:
                 data = geolocator.geocode(city_country[0] +','+ city_country[1])
                 cities_data.append([tuple(city_country), data])     
                     
-                if ((count % 500 == 0) & (count != 0)) | (city_country == cities_countries[-1]):  
+                if ((count % 100 == 0) & (count != 0)) | (city_country == cities_countries[-1]):  
                     print('Cities_data_saved - {}'.format(city_country))
 
                     file = open('pickle_files/cities_countries/' + name_saved_file + '_' + str(city_country[0]) + '_' + str(city_country[1]), 'wb')
@@ -532,7 +532,7 @@ class HtmlParser:
                 time.sleep(2)
 
             except ConnectionError:
-                time.sleep(300)       
+                time.sleep(3)       
 
         return print('All cities data saved with last names: {}'.format(city_country))
 

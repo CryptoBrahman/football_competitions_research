@@ -230,7 +230,7 @@ class object:
         const.SATURN: 5,
         const.URANUS: 3,
         const.NEPTUNE: 3,
-        const.PLUTO: 3,
+        const.PLUTO: 5,
         const.CHIRON: 3,
         const.NORTH_NODE: 2,
         const.SOUTH_NODE: 2,
@@ -249,7 +249,7 @@ class object:
         'Antes Saturn': 2,
         'Antes Uranus': 3,
         'Antes Neptune': 2,
-        'Antes Pluto': 3,
+        'Antes Pluto': 5,
         'Antes Chiron': 2,
         'Antes Pars Fortuna': 3,
     }
