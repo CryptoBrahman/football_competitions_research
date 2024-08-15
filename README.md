@@ -8,11 +8,11 @@ c) how pycharm add own modules:
     If your own module is in the same path, you need mark the path as Sources Root. In the project explorer, 
     right-click on the directory that you want import. Then select Mark Directory As and select Sources Root.
 
-# Create new columns for each object, five clasess for favorite's advantsge and orbs's approuch  -----++++++
-# Will change aspect's values from least to lagest and vice versa (1 - 5, 5 - 1) for ml alrorithm. ----------
-# Find decision for rulers the opposite by values: ('ruler_asc'-'ruler_ic), ('ruler_dsc'-'ruler_mc) - for one planet. --------
-# Change 'moon_conv_denide' aspect on 'moon_conv_compl' or 'moon_conv_compl_weak' for matches with time duration more than 100 min. -------
-# Create 'all_asps', 'main_asps' and ' addition_asps' - columns. -------
+Create new columns for each object, five clasess for favorite's advantsge and orbs's approuch  
+Will change aspect's values from least to lagest and vice versa (1 - 5, 5 - 1) for ml alrorithm. 
+Find decision for rulers the opposite by values: ('ruler_asc'-'ruler_ic), ('ruler_dsc'-'ruler_mc) - for one planet. 
+Change 'moon_conv_denide' aspect on 'moon_conv_compl' or 'moon_conv_compl_weak' for matches with time duration more than 100 min. 
+Create 'all_asps', 'main_asps' and ' addition_asps' - columns. 
 
 
 1) Get list games by date and parsing every event for game by leagues, create two dataframes 'df_games' and 'df_events': - games_api_parser.ipynb 
