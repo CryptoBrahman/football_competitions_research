@@ -17,14 +17,15 @@ c) how pycharm add own modules:
 
 1) Get list games by date and parsing every event for game by leagues, create two dataframes 'df_games' and 'df_events': - games_api_parser.ipynb 
 2) Create 'df_comp_tabs_lgs' on during date for every league with team's statistic: - parsing_competition_tables.ipynb
-3) Combine game, countries and teams cities at one dataframe, find teams without cities and add new data after manual fix: -concatinate_all_data.ipynb
+3) Combine game, countries and teams cities at one dataframe, find teams without cities and add new data after manual fix: -concatinate_data_coef_pow.ipynb
 4) Parsing new teams data(city, country) from soccer365: - parsing_teams_data.ipynb
 5) Manual fixing new team data in csv file: - parsing_teams_data.ipynb
 6) Add new team data(city, country) in 'df_teams_data : - teams_data.ipynb
-7) Return in -concatinate_all_data.ipynb and add new team data
+7) Return in -concatinate_data_coef_pow.ipynb and add new team data
 8) Parsing geolocation data with geocords, manual fix errors in cities, countries names and teams data. Add new unique citie's in coords df : -geolocation_data.ipynb
 9) Calculate astrological aspects for each game: - astroaspects.ipynb
-10) Research new and old data: - games_statistic.ipynb 
+10) Concatinate and prepare files with aspects: - concatinate_prepare_aspect_files.ipynb 
+11) Aspects statistic research, fix some errors in moons orbs, get features importance, create df for other ml servers: - statistic_research.ipynb
 
 .)
 games_api_parser.ipynb           - data parsing by days from 'soccer365.me/ru' cite and create df 

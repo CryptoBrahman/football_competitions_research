@@ -1,8 +1,12 @@
 import sys
-sys.path.append('/home/cryptobrahman/Own/football_competitions_research/own_modules/') 
+
+import numpy as np
+
+sys.path.append('/home/cryptobrahman/Own/football_competitions_research/own_modules/')
 sys.path.append('/mnt/KINGSTON_120/Own/football_competitions_research/own_modules/')
 
 import re
+import csv
 import pickle
 import time
 import operator
@@ -10,6 +14,7 @@ import requests
 import datetime
 import unicodedata
 import pandas as pd
+import cloudscraper
 
 from bs4 import BeautifulSoup
 from Lat_lon.lat_lon import LatLon, Latitude, Longitude
@@ -157,12 +162,13 @@ class ParsingDataPrepare:
         return min_index
 
     @staticmethod
-    # For 'bets' and 'pos' coeffs use 'min_point' method, for 'pts' - 'max_point', 'sum_point' methods.
+    # For 'bets-multiplication' and 'pos' coeffs use 'min_point' method, for 'pts' - 'max_point', 'sum_point' methods.
+    # For 'bets-sum' - bets_sum_point method.
     def roles_determinate(inputlist, power_coef: float, method: str):
-        if method != 'min_point' and method != 'max_point' and method != 'sum_point':
+        if method != 'min_point' and method != 'max_point' and method != 'sum_point' and method != 'bets_sum_point':
             print("Unsupported value in single('min_point','max_point', 'sum_point')")
-        if None in inputlist:
-            return None
+        if np.isnan(inputlist).any():
+            return 'Nodeterm'
 
         if method == 'min_point':
             math_oper = operator.mul
@@ -173,6 +179,9 @@ class ParsingDataPrepare:
         if method == 'sum_point':
             math_oper = operator.add
             roles_dict = {0: 'Pre', 1: 'Fav'}
+        if method == 'bets_sum_point':
+            math_oper = operator.add
+            roles_dict = {0: 'Fav', 1: 'Pre'}
 
         if math_oper(power_coef, inputlist[ParsingDataPrepare.get_minvalue_ind(inputlist)]) \
                 <= inputlist[~ParsingDataPrepare.get_minvalue_ind(inputlist)]:
@@ -270,7 +279,7 @@ class HtmlParser:
     
     @staticmethod
     # function take url without date
-    def parsing_write_by_date(numdays: int, start_year: int, start_month: int, start_day: int, file_name: str, 
+    def parsing_write_by_date(numdays: int, start_year: int, start_month: int, start_day: int, file_name ='data_games', 
                                                                 start_url='https://soccer365.me/online/&date='):
         date_list = HtmlParser.create_date_list(numdays, start_year, start_month, start_day)
         all_matches_db = {}
@@ -281,104 +290,116 @@ class HtmlParser:
             all_matches_db.update(matches_db)
             time.sleep(3)
         
-        all_matches = open(file_name, 'wb')
-        pickle.dump(all_matches_db, all_matches)  
-        all_matches.close()
+        # 08_23
+#         all_matches = open(file_name, 'wb')
+#         pickle.dump(all_matches_db, all_matches)  
+#         all_matches.close()
         
-        return print('Data is saved')
-    
-#     @staticmethod
-#     # event_hts and event_ats - left-right position on site's page
-#     def find_game_events(game_ids: list, url='https://soccer365.me/games/', name_saved_file='events_games'):
-#         events_dict = {}
-#         for game_id, count in zip(game_ids, range(len(game_ids))):
-#             try:
-#                 html = requests.get(url + game_id).content
-#                 soup = BeautifulSoup(html, "html.parser")
+#         return print('Data is saved') 
+        print('Data is saved in all_matches_db') 
+        return all_matches_db
+        
+    @staticmethod
+    # event_hts and event_ats - left-right position on site's page
+    def find_game_events(game_ids: list, url='https://soccer365.me/games/', name_saved_file='events_games.csv'):
+        scraper     = cloudscraper.create_scraper()
+        events_dict = {}
+        for game_id, count in zip(game_ids, range(len(game_ids))):
+            try:
+                html = scraper.get(url + game_id).text
+                # html = requests.get(url + game_id).content
+                soup = BeautifulSoup(html, "html.parser")
 
-#                 event_mins = [x.get_text() for x in soup.find_all('div', {'class':'event_min'})]
-#                 event_mins = [HtmlParser.cut_part_of_string(str(x), '^', '\'') for x in event_mins]
-#                 event_mins = [''.join(x) if x != [] else '+' for x in event_mins]
+                event_mins = [x.get_text() for x in soup.find_all('div', {'class':'event_min'})]
+                event_mins = [HtmlParser.cut_part_of_string(str(x), '^', '\'') for x in event_mins]
+                event_mins = [''.join(x) if x != [] else '+' for x in event_mins]
             
-#                 event_hts = [x.find_all('div') for x in soup.find_all('div', {'class':'event_ht'})]
-#                 event_hts = [HtmlParser.cut_part_of_string(str(x), 'icon live_', '\">') for x in event_hts]
-#                 event_ats = [x.find('div') for x in soup.find_all('div', {'class':'event_at'})]
-#                 event_ats = [HtmlParser.cut_part_of_string(str(x), 'icon live_', '\">') for x in event_ats]
+                event_hts = [x.find_all('div') for x in soup.find_all('div', {'class':'event_ht'})]
+                event_hts = [HtmlParser.cut_part_of_string(str(x), 'icon live_', '\">') for x in event_hts]
+                event_ats = [x.find('div') for x in soup.find_all('div', {'class':'event_at'})]
+                event_ats = [HtmlParser.cut_part_of_string(str(x), 'icon live_', '\">') for x in event_ats]
 
-#                 event_hts_ats = [y if x == [] else x for x, y in zip(event_hts, event_ats)]
-#                 event_hts_ats = [''.join(x) for x in event_hts_ats]
+                event_hts_ats = [y if x == [] else x for x, y in zip(event_hts, event_ats)]
+                event_hts_ats = [''.join(x) for x in event_hts_ats]
                 
-#                 team_id_hts = soup.find('div', {'class':'live_game_ht'})
-#                 team_id_hts = ''.join(HtmlParser.cut_part_of_string(str(team_id_hts), '/clubs/', '/\">'))
-#                 team_id_ats = soup.find('div', {'class':'live_game_at'})
-#                 team_id_ats = ''.join(HtmlParser.cut_part_of_string(str(team_id_ats), '/clubs/', '/\">'))
+                team_id_hts = soup.find('div', {'class':'live_game_ht'})
+                team_id_hts = ''.join(HtmlParser.cut_part_of_string(str(team_id_hts), '/clubs/', '/\">'))
+                team_id_ats = soup.find('div', {'class':'live_game_at'})
+                team_id_ats = ''.join(HtmlParser.cut_part_of_string(str(team_id_ats), '/clubs/', '/\">'))
                 
-#                 teams_ids  = team_id_hts + ' - ' + team_id_ats
+                teams_ids  = team_id_hts + ' - ' + team_id_ats
                 
-#                 stats_items = soup.find_all("div", {"class": "stats_item"})
-#                 stats_dict = []
+                stats_items = soup.find_all("div", {"class": "stats_item"})
+                stats_dict = []
                 
-#                 for stats_item in stats_items:
-#                     stats_title = stats_item.find("div", {"class": "stats_title"}).text
-#                     stats_inf_1 = stats_item.find_all("div", {"class": "stats_inf"})[0].text
-#                     stats_inf_2 = stats_item.find_all("div", {"class": "stats_inf"})[1].text
-#                     stats_list  = stats_title, stats_inf_1, stats_inf_2
-#                     stats_dict.append(stats_list)
+                for stats_item in stats_items:
+                    stats_title = stats_item.find("div", {"class": "stats_title"}).text
+                    stats_inf_1 = stats_item.find_all("div", {"class": "stats_inf"})[0].text
+                    stats_inf_2 = stats_item.find_all("div", {"class": "stats_inf"})[1].text
+                    stats_list  = stats_title, stats_inf_1, stats_inf_2
+                    stats_dict.append(stats_list)
 
-#                 try:
-#                     preview_items = soup.find_all('div', {'class':'preview_item'})
-#                     city_country  = preview_items[0].find_all('span', {'class':'min_gray'})[0].text
-#                 except (AttributeError, IndexError):   
-#                     preview_items = city_country = ''
+                try:
+                    preview_items = soup.find_all('div', {'class':'preview_item'})
+                    city_country  = preview_items[0].find_all('span', {'class':'min_gray'})[0].text
+                except (AttributeError, IndexError):
+                    preview_items = city_country = ''
 
-#                 try:
-#                     prview_weath_tmp = preview_items[0].find('span', {'class':'prview_weath_tmp'}).text
-#                     weather          = HtmlParser.cut_part_of_string(prview_weath_tmp, '^', '°')
-#                     temp             = HtmlParser.cut_part_of_string(prview_weath_tmp, '\xa0\xa0', '$')
-#                     weath_temp       = ''.join(weather), ''.join(temp)
-#                 except (AttributeError, IndexError):
-#                     prview_weath_tmp = weath_temp = ''
+                try:
+                    prview_weath_tmp = preview_items[0].find('span', {'class':'prview_weath_tmp'}).text
+                    weather          = HtmlParser.cut_part_of_string(prview_weath_tmp, '^', '°')
+                    temp             = HtmlParser.cut_part_of_string(prview_weath_tmp, '\xa0\xa0', '$')
+                    weath_temp       = ''.join(weather), ''.join(temp)
+                except (AttributeError, IndexError):
+                    prview_weath_tmp = weath_temp = ''
 
-#                 try:
-#                     viewers = HtmlParser.cut_part_of_string(preview_items[1].text, ':', '$')
-#                     viewers = ''.join(viewers)
-#                 except (AttributeError, IndexError):
-#                     viewers = ''
+                try:
+                    viewers = HtmlParser.cut_part_of_string(preview_items[1].text, ':', '$')
+                    viewers = ''.join(viewers)
+                except (AttributeError, IndexError):
+                    viewers = ''
 
-#                 time.sleep(1.5)
-#                 url_for_bets = url.replace('.me/', '.ru/')
-#                 bets_html    = requests.get(url_for_bets + game_id).content
-#                 bets_soup    = BeautifulSoup(bets_html, "html.parser")
+                time.sleep(1.0)
+                url_for_bets = url.replace('.me/', '.ru/')
+                bets_html    = scraper.get(url_for_bets + game_id).text
+                # bets_html  = requests.get(url_for_bets + game_id).content
+                bets_soup    = BeautifulSoup(bets_html, "html.parser")
+                bet_titeles  = [x.get_text() for x in bets_soup.find_all('div', {'class':'odds_coeff_title'})]
 
-#                 bet_titeles  = [x.get_text() for x in bets_soup.find_all('div', {'class':'odds_coeff_title'})]
+                try:
+                    coeffs = [x.get_text() for x in bets_soup.find_all('div', {'class':'odds_coeff'})[:len(bet_titeles)]]
+                except (AttributeError, IndexError):
+                    coeffs = ''
 
-#                 try:
-#                     coeffs = [x.get_text() for x in bets_soup.find_all('div', {'class':'odds_coeff'})[:len(bet_titeles)]]
-#                 except (AttributeError, IndexError):
-#                     coeffs = ''
+                bet_coeffs = bet_titeles, coeffs
 
-#                 bet_coeffs = bet_titeles, coeffs
-
-#                 events = {game_id:[teams_ids, event_mins, event_hts_ats, stats_dict, city_country, viewers, weath_temp, bet_coeffs]}
-#                 events_dict.update(events)
-
+                events = {game_id:[teams_ids, event_mins, event_hts_ats, stats_dict, city_country, viewers, weath_temp, bet_coeffs]}
+                events_dict.update(events)
+#        8_23        
 #                 if ((count % 500 == 0) & (count != 0)) | (game_id == game_ids[-1]):
-#                     print('Current_500_games_events_saved - {}'.format(game_id))
+#                     with open(name_saved_file, 'a') as f:
+#                         w = csv.writer(f)
+#                         w.writerows(events_dict.items())
 
-#                     events_games = open('pickle_files/' + name_saved_file + '_' + game_id, 'wb')
-#                     pickle.dump(events_dict, events_games)  
-#                     events_games.close()
-#                     time.sleep(6) # time.sleep(600)
+#                     events_dict.clear()
+#                     # events_games = open('pickle_files/new_events/new/' + name_saved_file, 'wb') # + '_' + game_id
+                    # pickle.dump(events_dict, events_games)
+                    # events_games.close()
+                    # time.sleep(1.0)1
 
-#                 time.sleep(1.5)    
-#             except ConnectionError:
-#                 time.sleep(600)  
-#                 HtmlParser.find_game_events(game_ids[count +1:], name_saved_file=name_saved_file)
+                if (count % 500 == 0) & (count != 0):
+                    print('Current_500_games_events_saved - {}'.format(game_id))
 
-#         return print('Data saved with last id: {}'.format(game_id))
+                time.sleep(1.0)
+######################################################################################################
+            except ConnectionError:
+                time.sleep(1.0)
+                HtmlParser.find_game_events(game_ids[count +1:], name_saved_file=name_saved_file)
+        # return print('Data saved with last id: {}'.format(game_id))
+        return events_dict
     
     @staticmethod
-    def find_teams_ids(tm_names: list, url='https://soccer365.me/?a=search&q=', name_saved_file='teams_ids_na_cities'):
+    def find_teams_ids(tm_names: list, url='https://soccer365.me/?a=search&q=', name_saved_file='teams_ids_na_es_daes'):
         ids_teams = []
         
         for tm_name, count in zip(tm_names, range(len(tm_names))):
@@ -500,18 +521,23 @@ class HtmlParser:
                 dict_country = {'comp_id': comp_id, 'country_name': country_name}
 
                 countries_names_ids.append(dict_country)
+#        08_23
+#                 if comp_id == comp_ids[-1]:  
+#                     print('All_countries_names_saved - {}'.format(comp_id))
 
-                if comp_id == comp_ids[-1]:  
-                    print('All_countries_names_saved - {}'.format(comp_id))
+#                     file = open('pickle_files/' + name_saved_file + '_' + comp_id, 'wb')
+#                     pickle.dump(countries_names_ids, file)  
+#                     file.close() 
 
-                    file = open('pickle_files/' + name_saved_file + '_' + comp_id, 'wb')
-                    pickle.dump(countries_names_ids, file)  
-                    file.close() 
+#             except ConnectionError:
+#                 time.sleep(100)       
 
+#         return print('All countries names saved with last id: {}'.format(comp_id))
             except ConnectionError:
-                time.sleep(100)       
-
-        return print('All countries names saved with last id: {}'.format(comp_id))
+                time.sleep(100)
+        return  countries_names_ids    
+        
+        
 
     @staticmethod
     # cities_countries - list of tuples: ('Štip', 'FYR Macedonia')
@@ -521,11 +547,10 @@ class HtmlParser:
         for city_country, count in zip(cities_countries, range(len(cities_countries))):
             try:
                 data = geolocator.geocode(city_country[0] + ',' + city_country[1])
-                # time.sleep(2)
                 cities_data.append([tuple(city_country), data])
 
-                if ((count % 100 == 0) & (count != 0)) | (city_country == cities_countries[-1]):
-                    print('Cities_data_saved 100 - {}'.format(city_country))
+                if ((count % 500 == 0) & (count != 0)) | (city_country == cities_countries[-1]):
+                    print('Cities_data_saved 500 - {}'.format(city_country))
 
                     file = open('pickle_files/cities_countries/' + name_saved_file + '_' + str(city_country[0]) + '_' + str(city_country[1]), 'wb')
                     pickle.dump(cities_data, file)
@@ -534,7 +559,90 @@ class HtmlParser:
                 time.sleep(3)
         return print('All cities data saved with last names: {}'.format(city_country))
 
+    @staticmethod
+    # Google can block parsing by ip address
+    def find_google_soccerway_team_urls(teams_countries_lt: list,
+                                        url='https://www.google.com/search?channel=fs&client=ubuntu&q=',
+                                        name_saved_file='soccerway_team_urls_26_03_2021_sec'):
+        headers = {'User-Agent': 'Mozilla/5.0'}
+        all_team_data = []
 
+        for count, team_country in enumerate(teams_countries_lt):
+            try:
+                # 08_23
+                # html = requests.get(url + str(team_country[0]) +'+fc+'+ str(team_country[1]) +'+soccerway', headers=headers).content
+                html = requests.get(url + str(team_country) +'+fc soccerway', headers=headers).content
+                soup = BeautifulSoup(html, "html.parser")
+                find_urls = soup.find_all('div', {'class': 'egMi0 kCrYT'})
+
+                urls = [HtmlParser.cut_part_of_string(str(url), 'url\?q=', '&') for url in find_urls]
+
+                if not urls:
+                    print('Google block parsing')
+                    break
+
+                team_url = [url for url in urls if HtmlParser.cut_part_of_string(''.join(url), 'com/', '/') == ['teams']]
+                team_url = team_url[0] if team_url != [] else urls[0]
+                # 08_23
+                # team_data = team_country + team_url
+                # all_team_data.append(team_data)
+                team_data = [team_country] + team_url
+                all_team_data.append(team_data)
+                # if ((count % 500 == 0) & (count != 0)) | (team_country == teams_countries_lt[-1]):
+                #     print('Teams_url_saved 500 - {}'.format(team_country))
+                    
+                    # file = open('pickle_files/teams_data/' + name_saved_file + '_' + str(team_country[0]) + '_' + str(
+                    #     team_country[1]), 'wb')
+                    # pickle.dump(all_team_data, file)
+                    # file.close()
+                time.sleep(3)
+            except ConnectionError:
+                time.sleep(3)
+        # return print('All teams urls saved with last names: {}'.format(teams_countries_lt[-1]))
+        print('All teams urls saved')
+        return all_team_data
+      
+    @staticmethod
+    def find_teams_data_soccerway(teams_urls_lt: list, name_saved_file='soccerway_team_data_26_03_2021_sec'):
+        headers = {'User-Agent': 'Mozilla/5.0'}
+        all_team_data = []
+        for count, team_country_url in enumerate(teams_urls_lt):
+            try:
+                # 08_23
+                # html = requests.get(team_country_url[2], headers=headers).content
+                html = requests.get(team_country_url[1], headers=headers).content
+                soup = BeautifulSoup(html, "html.parser")
+                if soup.find('div', {'id': 'subheading'}):
+                    find_name_div = soup.find('div', {'id': 'subheading'})
+                    find_name = find_name_div.find('h1').text
+                    dt_data = [x.text for x in soup.find_all("dt")]
+                    dd_data = [x.text.strip() for x in soup.find_all("dd")]
+                    dd_data = [re.sub('\s+', ' ', x) for x in dd_data]
+                    dt_dd_dict = {'Team Name': find_name}
+                    for key, val in zip(dt_data, dd_data):
+                        dt_dd_dict[key] = val
+
+                #     team_data = team_country_url[0:2] + [dt_dd_dict]
+                # else:
+                #     team_data = team_country_url[0:2] + ['nd']
+                    team_data = team_country_url[0:1] + [dt_dd_dict]
+                else:
+                    team_data = team_country_url[0:1] + ['nd']
+
+                all_team_data.append(team_data)
+
+                # if ((count % 500 == 0) & (count != 0)) | (team_country_url == teams_urls_lt[-1]):
+                #     print('Teams_data_saved 500 - {}'.format(team_country_url[:2]))
+                #     file = open('pickle_files/teams_data/' + name_saved_file + '_' + str(team_country_url[0]) + '_'
+                #                 + str(team_country_url[1]), 'wb')
+                #     pickle.dump(all_team_data, file)
+                #     file.close()
+                # time.sleep(1)
+            except ConnectionError:
+        #         print(count)
+        # return print('All teams data saved with last names: {}'.format(team_country_url[:2]))
+                print('All teams data saved')
+        return all_team_data
 
 
 

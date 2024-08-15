@@ -3,6 +3,7 @@ sys.path.append('/home/cryptobrahman/Own/football_competitions_research/own_modu
 
 import pandas as pd
 import pylunar
+import re
 from numpy import arange, isclose
 from copy import deepcopy
 
@@ -24,15 +25,16 @@ class AstrologicalConstants:
     rulers_constants    = ['ASC', 'DESC', 'MC', 'IC', 'PARS_FORTUNA']
     
     necessary_constants = ['SUN', 'MOON', 'SATURN', 'URANUS', 'NEPTUNE', 'PLUTO', 'CHIRON', 'NORTH_NODE', 'SOUTH_NODE']
-    
-    main_objects        = ['moon', 'sun', 'saturn', 'uranus', 'neptune', 'pluto', 'chiron', 'north_node', 'south_node'] 
+
+    main_objects        = ['moon', 'sun', 'saturn', 'uranus', 'neptune', 'pluto', 'chiron', 'north_node', 'south_node']
                            
-    ruler_objects       = ['ruler_asc', 'ruler_desc', 'ruler_mc', 'ruler_ic', 'ruler_pars_fortuna', 'ruler_antes_pars_fortuna',
+    ruler_objects       = ['ruler_asc', 'ruler_desc', 'ruler_mc', 'ruler_ic', 'ruler_pars_fortuna', 
                            'ruler_pars_spirit', 'ruler_pars_glory', 'ruler_pars_crest', 'ruler_pars_rock']
     
     pars_objects        = ['pars_fortuna', 'pars_spirit', 'pars_glory', 'pars_crest', 'pars_rock']
     
-    for_antes_objects   = ['moon', 'ruler_asc', 'ruler_desc', 'ruler_mc', 'ruler_ic', 'pars_fortuna', 'uranus', 'neptune', 'pluto', 'chiron']
+    for_antes_objects   = ['moon', 'ruler_asc', 'ruler_desc', 'ruler_mc', 'ruler_ic', 'pars_fortuna', 'pars_spirit', 'uranus', 
+                           'neptune', 'pluto', 'chiron', 'north_node', 'south_node', 'ruler_pars_fortuna', 'ruler_pars_spirit']
     
     pars_constants      = ['PARS_SPIRIT', 'PARS_GLORY', 'PARS_CREST', 'PARS_ROCK']
     
@@ -42,9 +44,18 @@ class AstrologicalConstants:
     
     aspekts_degrees     = {'Con':0, 'Sixt':60, 'Sque':90, 'Trin':120, 'Opp':180}
 
-    parts               = ['Pars Fortuna', 'Antes Pars Fortuna', 'Pars Spirit', 'Pars Glory', 'Pars Crest', 'Pars Rock']
+    parts               = ['Pars Fortuna', 'Antes Pars Fortuna', 'Pars Spirit', 'Antes Pars Spirit', 'Pars Glory', 'Pars Crest', 'Pars Rock']
 
-
+    nakshatras          = {'Ashwini':(0, 13.33), 'Bharani':(13.33, 26.66), 'Krittika':(26.66, 39.99), 'Rohini':(39.99, 53.33), 'Mrigashirsha':(53.33, 66.66), 
+                          'Ardra':(66.66, 79.99), 'Punarvasu':(79.99, 93.33), 'Pushya':(93.33, 106.66), 'Ashlesha':(106.66, 119.99), 'Magha':(119.99, 133.33), 
+                          'Purva Phalguni':(133.33, 146.66), 'Uttara Phalguni':(146.66, 159.99), 'Hasta':(159.99, 173.33), 'Chitra':(173.33, 186.66), 
+                          'Swati':(186.66, 199.99), 'Vishakha':(199.99, 213.33), 'Anuradha':(213.33, 226.66), 'Jyeshta':(226.66, 239.99), 'Mula':(239.99, 253.33), 
+                          'Purva Ashadha':(253.33, 266.66),      
+                          'Uttara Ashadha':(266.66, 276.66), 'Abhijit':(276.66, 280.88), 'Shravana':(280.88, 293.33), # 21-23 != 13.33
+                          'Dhanistha':(293.33, 306.66), 'Shatabhisha':(306.66, 319.99), 'Purva Bhadrapada':(319.99, 333.33), 'Uttara Bhadrapada':(333.33, 346.66), 
+                          'Revathi':(346.66, 360)} 
+    
+    
 class MoonDaysCalculate:
     ''' Example lat - lon, datetime Y,M,D H,m,0
     mi = pylunar.MoonInfo((42, 21, 0), (-71, 3, 0))
@@ -71,6 +82,23 @@ class MoonDaysCalculate:
         mi = pylunar.MoonInfo(lat, lon)
         mi.update(date_time)
         return int(mi.age())
+    
+    @staticmethod
+    def calculate_moon_mansions(nakshatras: dict, lon: int) -> str:
+        for key, val in nakshatras.items():
+            if lon > val[0] and lon < val[1]:
+                return key 
+    
+    @staticmethod     
+    # minus sing "1w7" of lon and "8s10" of lat
+    def transform_lat_lon_to_nimeric(x: str) -> float:
+        a = re.split('[a-z]',str(x))[0]
+        b = re.split('[a-z]',str(x))[1]
+        if re.findall('w', str(x)) or re.findall('s', str(x)):
+            val = str(-abs(int(a))) +'.'+ str(b)
+        else:
+            val =  str(a) +'.'+ str(b)
+        return float(val) 
 
 
 class AstrologicalPoints:
@@ -99,11 +127,20 @@ class AstrologicalPoints:
     def rulers_col_names(rulers_list: list):
         rulers_col_names = ['ruler_' + str.lower(x) for x in rulers_list]
         return rulers_col_names
-    
+
+    # 08_23
+    # @staticmethod
+    # def ruler_of_object(col_object: pd.Series):
+    #     rulers_name = col_object.map(lambda x: essential.ruler(getattr(x, 'sign')))
+    #     return rulers_name
+
     @staticmethod
-    def ruler_of_object(col_object: pd.Series): 
-        rulers_name = col_object.map(lambda x: essential.ruler(getattr(x, 'sign')))
-        return rulers_name
+    def ruler_of_object(col_object: pd.Series, sr_charts: pd.Series):
+        rulers_name = map(lambda x: essential.ruler(getattr(x[1], 'sign')) \
+                        if essential.ruler(getattr(x[1], 'sign')) != 'Moon' \
+                        else essential.ruler(getattr(sr_charts[x[0]].get(const.MOON),'sign')), enumerate(col_object))
+
+        return pd.Series(rulers_name)
     
     @staticmethod
     def chart_object_attributes(df: pd.DataFrame, col_charts: str, col_obj_names: str):
@@ -502,22 +539,25 @@ class AspectsPrepare:
             objects = AspectsPrepare.remove_objects(objects, [obj_id])
             
             for incl_obj in objects:
-                for type_asp, deg in aspekts_degrees.items():
-                    orb = AspectsPrepare.switching_ranges_with_orb(incl_obj.lon, obj_lon, obj_orb, deg, before_point_asp)
-                    if orb:
-                        asp = type_asp
-                        type_appr = AspectsPrepare.type_approach(incl_obj.lon, incl_obj.lonspeed, obj_lon, obj_lonsp, obj_orb, obj_house, deg, before_point_asp)
-                        tr_orb = AspectsPrepare.degree_transform(orb)
-                        sing = AspectsPrepare.equal_different_sing_feature(singles_degrees, incl_obj.lon, obj_lon, deg)
-                    else:
-                        asp, type_appr, tr_orb, sing = None, None, None, None
-                    
-                    point_aspects = {'f_point': id_obj, 's_point': incl_obj.id, 'type': asp, 'approach': type_appr, 'sing': sing, 'orb': orb, 'tr_orb': tr_orb, 
-                                     'longs': [round(obj_lon, 2), round(incl_obj.lon, 2)], 'bp_asp': before_point_asp}
+                if incl_obj.id in AstrologicalConstants.houses:
+                    continue
+                else:
+                    for type_asp, deg in aspekts_degrees.items():
+                        orb = AspectsPrepare.switching_ranges_with_orb(incl_obj.lon, obj_lon, obj_orb, deg, before_point_asp)
+                        if orb:
+                            asp = type_asp
+                            type_appr = AspectsPrepare.type_approach(incl_obj.lon, incl_obj.lonspeed, obj_lon, obj_lonsp, obj_orb, obj_house, deg, before_point_asp)
+                            tr_orb = AspectsPrepare.degree_transform(orb)
+                            sing = AspectsPrepare.equal_different_sing_feature(singles_degrees, incl_obj.lon, obj_lon, deg)
+                        else:
+                            asp, type_appr, tr_orb, sing = None, None, None, None
 
-                    if point_aspects['type'] != None:
-                        all_aspekts.append(point_aspects)
-                        
+                        point_aspects = {'f_point': id_obj, 's_point': incl_obj.id, 'type': asp, 'approach': type_appr, 'sing': sing, 'orb': orb, 'tr_orb': tr_orb,
+                                         'longs': [round(obj_lon, 2), round(incl_obj.lon, 2)], 'bp_asp': before_point_asp}
+
+                        if point_aspects['type'] != None:
+                            all_aspekts.append(point_aspects)
+
             return all_aspekts
 
     @staticmethod
@@ -1088,6 +1128,7 @@ class AspectsCalculate:
         moon_remove_objs   = ['Asc', 'Desc', 'MC', 'IC', 'Uranus', 'Neptune', 'Pluto', 'Chiron', 'North Node', 'South Node', 'Antes Moon','Antes Uranus', 
                               'Antes Neptune', 'Antes Pluto', 'Antes Chiron']
         main_remove_objs   = ['Asc', 'Desc', 'MC', 'IC', 'Moon', 'Antes Moon']
+        # houses_aspect_degs = {'Con': 0, 'Sixt': 60, 'Sque': 90, 'Trin': 120, 'Opp': 180}
         houses_aspect_degs = {'Con': 0}
         main_aspect_degs   = {'Con': 0, 'Opp': 180}
         moon_aspect_degs   = AstrologicalConstants.aspekts_degrees
