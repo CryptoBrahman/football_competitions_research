@@ -2,7 +2,8 @@ import sys
 sys.path.append('/home/cryptobrahman/Own/football_competitions_research/own_modules/') 
 
 import pandas as pd
-from itertools import combinations
+import pylunar
+import re
 from numpy import arange, isclose
 from copy import deepcopy
 
@@ -24,15 +25,16 @@ class AstrologicalConstants:
     rulers_constants    = ['ASC', 'DESC', 'MC', 'IC', 'PARS_FORTUNA']
     
     necessary_constants = ['SUN', 'MOON', 'SATURN', 'URANUS', 'NEPTUNE', 'PLUTO', 'CHIRON', 'NORTH_NODE', 'SOUTH_NODE']
-    
-    main_objects        = ['moon', 'sun', 'saturn', 'uranus', 'neptune', 'pluto', 'chiron', 'north_node', 'south_node'] 
+
+    main_objects        = ['moon', 'sun', 'saturn', 'uranus', 'neptune', 'pluto', 'chiron', 'north_node', 'south_node']
                            
-    ruler_objects       = ['ruler_asc', 'ruler_desc', 'ruler_mc', 'ruler_ic', 'ruler_pars_fortuna', 'ruler_antes_pars_fortuna',
+    ruler_objects       = ['ruler_asc', 'ruler_desc', 'ruler_mc', 'ruler_ic', 'ruler_pars_fortuna', 
                            'ruler_pars_spirit', 'ruler_pars_glory', 'ruler_pars_crest', 'ruler_pars_rock']
     
     pars_objects        = ['pars_fortuna', 'pars_spirit', 'pars_glory', 'pars_crest', 'pars_rock']
     
-    for_antes_objects   = ['moon', 'ruler_asc', 'ruler_desc', 'ruler_mc', 'ruler_ic', 'pars_fortuna', 'uranus', 'neptune', 'pluto', 'chiron']
+    for_antes_objects   = ['moon', 'ruler_asc', 'ruler_desc', 'ruler_mc', 'ruler_ic', 'pars_fortuna', 'pars_spirit', 'uranus', 
+                           'neptune', 'pluto', 'chiron', 'north_node', 'south_node', 'ruler_pars_fortuna', 'ruler_pars_spirit']
     
     pars_constants      = ['PARS_SPIRIT', 'PARS_GLORY', 'PARS_CREST', 'PARS_ROCK']
     
@@ -42,9 +44,63 @@ class AstrologicalConstants:
     
     aspekts_degrees     = {'Con':0, 'Sixt':60, 'Sque':90, 'Trin':120, 'Opp':180}
 
-    parts               = ['Pars Fortuna', 'Antes Pars Fortuna', 'Pars Spirit', 'Pars Glory', 'Pars Crest', 'Pars Rock']
+    parts               = ['Pars Fortuna', 'Antes Pars Fortuna', 'Pars Spirit', 'Antes Pars Spirit', 'Pars Glory', 'Pars Crest', 'Pars Rock']
 
+    nakshatras          = {'Ashwini':(0, 13.33), 'Bharani':(13.33, 26.66), 'Krittika':(26.66, 39.99), 'Rohini':(39.99, 53.33), 'Mrigashirsha':(53.33, 66.66), 
+                          'Ardra':(66.66, 79.99), 'Punarvasu':(79.99, 93.33), 'Pushya':(93.33, 106.66), 'Ashlesha':(106.66, 119.99), 'Magha':(119.99, 133.33), 
+                          'Purva Phalguni':(133.33, 146.66), 'Uttara Phalguni':(146.66, 159.99), 'Hasta':(159.99, 173.33), 'Chitra':(173.33, 186.66), 
+                          'Swati':(186.66, 199.99), 'Vishakha':(199.99, 213.33), 'Anuradha':(213.33, 226.66), 'Jyeshta':(226.66, 239.99), 'Mula':(239.99, 253.33), 
+                          'Purva Ashadha':(253.33, 266.66),      
+                          'Uttara Ashadha':(266.66, 276.66), 'Abhijit':(276.66, 280.88), 'Shravana':(280.88, 293.33), # 21-23 != 13.33
+                          'Dhanistha':(293.33, 306.66), 'Shatabhisha':(306.66, 319.99), 'Purva Bhadrapada':(319.99, 333.33), 'Uttara Bhadrapada':(333.33, 346.66), 
+                          'Revathi':(346.66, 360)} 
     
+    
+class MoonDaysCalculate:
+    ''' Example lat - lon, datetime Y,M,D H,m,0
+    mi = pylunar.MoonInfo((42, 21, 0), (-71, 3, 0))
+    mi.update((2016, 8, 4, 1, 45, 0))
+    int(mi.age()) '''
+
+    @staticmethod
+    def geocoords_transform(df: pd.DataFrame, col_coords: str):
+        tr_num = df[col_coords].map(lambda x: (int(str(x).split('.')[0]), int(divmod(abs(x), 1)[1] * 0.6 * 100), 0))
+        return tr_num
+
+    @staticmethod
+    def date_time_transform(df: pd.DataFrame, col_coords: str):
+        date_splt = df[col_coords].map(lambda x: (pd.to_numeric(x[:10].split('.')[2]),
+                                                  pd.to_numeric(x[:10].split('.')[1]),
+                                                  pd.to_numeric(x[:10].split('.')[0]),
+                                                  pd.to_numeric(x[11:16].split(':')[0]),
+                                                  pd.to_numeric(x[11:16].split(':')[1]), 0))
+        return date_splt
+
+    @staticmethod
+    # Tuple lat example: (42, 21, 0), date_time: (2016, 8, 4, 1, 45, 0)
+    def moon_day_calculate(lat: tuple, lon: tuple, date_time: tuple):
+        mi = pylunar.MoonInfo(lat, lon)
+        mi.update(date_time)
+        return int(mi.age())
+    
+    @staticmethod
+    def calculate_moon_mansions(nakshatras: dict, lon: int) -> str:
+        for key, val in nakshatras.items():
+            if lon > val[0] and lon < val[1]:
+                return key 
+    
+    @staticmethod     
+    # minus sing "1w7" of lon and "8s10" of lat
+    def transform_lat_lon_to_nimeric(x: str) -> float:
+        a = re.split('[a-z]',str(x))[0]
+        b = re.split('[a-z]',str(x))[1]
+        if re.findall('w', str(x)) or re.findall('s', str(x)):
+            val = str(-abs(int(a))) +'.'+ str(b)
+        else:
+            val =  str(a) +'.'+ str(b)
+        return float(val) 
+
+
 class AstrologicalPoints:
     
     @staticmethod
@@ -71,11 +127,20 @@ class AstrologicalPoints:
     def rulers_col_names(rulers_list: list):
         rulers_col_names = ['ruler_' + str.lower(x) for x in rulers_list]
         return rulers_col_names
-    
+
+    # 08_23
+    # @staticmethod
+    # def ruler_of_object(col_object: pd.Series):
+    #     rulers_name = col_object.map(lambda x: essential.ruler(getattr(x, 'sign')))
+    #     return rulers_name
+
     @staticmethod
-    def ruler_of_object(col_object: pd.Series): 
-        rulers_name = col_object.map(lambda x: essential.ruler(getattr(x, 'sign')))
-        return rulers_name
+    def ruler_of_object(col_object: pd.Series, sr_charts: pd.Series):
+        rulers_name = map(lambda x: essential.ruler(getattr(x[1], 'sign')) \
+                        if essential.ruler(getattr(x[1], 'sign')) != 'Moon' \
+                        else essential.ruler(getattr(sr_charts[x[0]].get(const.MOON),'sign')), enumerate(col_object))
+
+        return pd.Series(rulers_name)
     
     @staticmethod
     def chart_object_attributes(df: pd.DataFrame, col_charts: str, col_obj_names: str):
@@ -357,8 +422,7 @@ class AspectsPrepare:
                 orb_con = AspectsPrepare.orb_calculate(include_lon, obj_lon, deg)
                 return orb_con
                 
-
-    @staticmethod         
+    @staticmethod
     def object_data(objects: list, name: str):
         for obj in objects:
             if obj.id == name:
@@ -550,9 +614,9 @@ class AspectsPrepare:
                     for val in values[1]:
                         if asp['f_point'] == val or asp['s_point'] == val: 
                             rulers_aspects.append(asp)
-                            ind = values[1].index(val)
-                            asp['charact'] = values[0][ind]
-                            asp['all_characts'] = values[0]
+                            # ind = values[1].index(val)
+                            # asp['charact'] = values[0][ind]
+                            # asp['all_characts'] = values[0]
 
         return rulers_aspects 
     
@@ -888,14 +952,28 @@ class AspectsClearing:
     
     @staticmethod
     def remove_duplicate_aspects(list_dicts: list):
+        for val in list_dicts:
+            if list_dicts.count(val) > 1:
+                list_dicts.remove(val)
+
+    @staticmethod
+    # Save aspect with 'bp_asp':'no'
+    def remove_equal_asp_besides_bp_asp(list_dicts: list):
+        fs_points = [[val['f_point'], val['s_point']] for val in list_dicts]
+        del_vals = []
+        for i, point in enumerate(fs_points):
+            if fs_points.count(point) > 1 and list_dicts[i]['bp_asp'] == 'yes':
+                del_vals.append(list_dicts[i])
+        for x in del_vals:
+            list_dicts.remove(x)
+
+    @staticmethod
+    def remove_mirror_aspects(list_dicts: list):
         list_dicts_cp = list_dicts.copy()
-        
         for val in list_dicts:
             for val_cp in list_dicts_cp:
                 if val['f_point'] == val_cp['s_point'] and val_cp['f_point'] == val['s_point']:
-                    list_dicts.remove(val_cp)  
-                else:
-                    continue
+                    list_dicts.remove(val_cp)
 
     @staticmethod
     # Only for natural points in list.
@@ -1082,12 +1160,16 @@ class AspectsCalculate:
                 if obj.id == 'Asc' or obj.id == 'Pluto':
                     asc_pluto.append(obj) 
 
-            asc_pluto_asp_after = AspectsPrepare.object_aspects('Asc', asc_pluto, houses_remove_objs, houses_aspect_degs, before_point_asp='no', after_orb=20)
+            asc_pluto_asp_after  = AspectsPrepare.object_aspects('Asc', asc_pluto, houses_remove_objs, houses_aspect_degs, before_point_asp='no', after_orb=10)
+            asc_pluto_asp_before = AspectsPrepare.object_aspects('Asc', asc_pluto, houses_remove_objs, houses_aspect_degs, before_point_asp='yes', before_orb=10)
             all_aspects.append(asc_pluto_asp_after)
+            all_aspects.append(asc_pluto_asp_before)
 
         all_aspects_full = AspectsPrepare.transform_dict_list_type(all_aspects)
 
         AspectsClearing.remove_duplicate_aspects(all_aspects_full)
+        AspectsClearing.remove_equal_asp_besides_bp_asp(all_aspects_full)
+        AspectsClearing.remove_mirror_aspects(all_aspects_full)
         AspectsClearing.remove_antes_unimportant_aspects(all_aspects_full)
         AspectsClearing.remove_node_opposition(all_aspects_full)
         AspectsClearing.remove_antes_with_own_nat_point_aspects(all_aspects_full)
@@ -1106,8 +1188,4 @@ class AspectsCalculate:
 
         AspectsClearing.remove_houses_one_nodes_conuction(all_aspects_full)  
 
-        return [all_aspects_full]
-    
-    
-    
-    
+        return all_aspects_full
